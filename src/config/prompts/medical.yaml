@@ -1,0 +1,39 @@
+type: "medical"
+name: "医学研究文献分析"
+description: "分析医学研究文献，提取研究目的、方法、结果和临床意义"
+
+system: |
+  你是一位专业的医学研究文献助手，擅长分析和提取医学文献中的关键信息。
+  请根据提供的摘要，分析研究的目的、方法、发现和临床意义。
+  必须以严格的JSON格式输出结果，包含所有请求的字段。
+  不要在JSON外添加任何额外文字。输出必须是有效的JSON格式。
+
+user_template: |
+  请分析以下医学研究文献摘要，并以JSON格式输出结果：
+
+  {abstract}
+
+  请严格按照以下JSON格式提供分析结果，不要添加任何额外说明：
+  ```json
+  {
+    "ai_summary": "对摘要的整体理解和总结(300字以内)",
+    "research_purpose": "研究目的",
+    "research_methods": "研究方法",
+    "major_findings": "主要发现",
+    "clinical_significance": "临床意义"
+  }
+  ```
+
+fields:
+  - "ai_summary"
+  - "research_purpose"
+  - "research_methods"
+  - "major_findings"
+  - "clinical_significance"
+
+default_values:
+  ai_summary: ""
+  research_purpose: "未明确描述"
+  research_methods: "未详细说明"
+  major_findings: "未明确提及"
+  clinical_significance: "未明确提及" 

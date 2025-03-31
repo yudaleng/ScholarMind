@@ -1,0 +1,63 @@
+type: "custom"
+name: "自定义模板"
+description: "自定义模板"
+
+system: |
+  你是一位专业的文献分析助手，擅长理解和总结各类学术文献。
+
+user_template: |
+  请分析以下学术文献摘要，并以JSON格式输出结果，包含以下字段：research_field、key_findings、methodology、ai_summary
+
+  摘要内容：
+  {abstract}
+
+  要求：
+  1. research_field：识别研究涉及的主要学术领域
+  2. key_findings：总结研究的关键发现或结论
+  3. methodology：识别研究中使用的主要研究方法或技术
+  4. ai_summary：对摘要的完整总结，包括研究背景、目的、方法和结果
+  5. 输出必须是有效的JSON格式
+  6. 仅输出JSON，不要有其他文字说明
+  7. 请使用中文回答
+
+  JSON格式示例：
+  {
+    "research_field": "认知神经科学",
+    "key_findings": "发现工作记忆在决策过程中起关键作用",
+    "methodology": "功能性磁共振成像(fMRI)研究",
+    "ai_summary": "该研究使用fMRI技术研究了工作记忆在人类决策过程中的作用。研究招募了30名健康志愿者，结果表明工作记忆负荷与决策质量显著相关。"
+  }
+
+fields:
+  - "research_field"   # 研究领域
+  - "key_findings"     # 主要发现
+  - "methodology"      # 研究方法
+  - "ai_summary"       # AI摘要
+
+default_values:
+  research_field: "未识别"
+  key_findings: "未识别"
+  methodology: "未识别"
+  ai_summary: ""
+
+# 指导说明 - 如何修改此提示词模板
+# --------------------------------------------------
+# 要自定义此提示词模板，您可以按照以下步骤操作：
+#
+# 1. 修改 system：定义AI助手的角色和专业领域
+#
+# 2. 修改 user_prompt：这是发送给AI模型的实际提示词
+#    - 保留 {abstract} 占位符，它将被替换为实际摘要内容
+#    - 更新字段要求说明，确保与您的fields一致
+#    - 更新JSON示例，使其与您的字段定义匹配
+#
+# 3. 修改 fields 列表：添加或删除您需要AI提取的信息字段
+#    - 每个字段应该是一个简短的名称，如 "method", "conclusion" 等
+#    - 字段名称应使用小写字母和下划线
+#
+# 4. 更新 default_values：为每个字段提供一个默认值
+#    - 对于未识别的内容，推荐使用 "未识别"
+#    - 对于摘要类字段，可以使用空字符串 ""
+#
+# 保存此文件后，系统将自动加载您的自定义提示词模板
+# -------------------------------------------------- 

@@ -1,0 +1,65 @@
+# ScholarMind 配置文件示例
+# 请复制此文件为 config.yaml 并填入您的实际配置
+
+# easyscholar API密钥配置
+easyscholar_api_key: "YOUR_EASYSCHOLAR_API_KEY"
+
+# 期刊指标配置
+journal_metrics:
+  # 需要查询的指标列表
+  metrics_to_fetch:
+    - "sciif"   # SCI影响因子-JCR
+    - "sci"     # SCI分区-JCR
+    - "sciUp"   # SCI升级版分区-中科院
+  # 指标名称到列名的映射（可选），不指定则使用指标名称作为列名
+  metrics_column_mapping:
+    "sciif": "impact_factor"
+    "sciUp": "中科院分区"
+
+# 数据源配置 - 支持多种类型和多个文件
+sources:
+  - type: "pubmed"
+    path: "data/input/pubmed-data.txt"
+    enabled: true
+  - type: "wos"
+    path: "data/input/wos-data.txt" 
+    enabled: true
+  - type: "sciencedirect"
+    path: "data/input/sciencedirect-data.txt"
+    enabled: true
+  
+# 输出配置
+output:
+  excel_path: "data/output/combined-output.xlsx"
+  separate_sheets: true
+
+# 大语言模型配置
+llm:
+  type: "vllm"  # 可选: vllm, siliconflow, ollama
+  # VLLM配置
+  vllm_api_url: "http://127.0.0.1:8000/v1/chat/completions"
+  vllm_api_key: ""
+  vllm_model: "qwen"
+  # 硅基流动配置
+  siliconflow_api_key: "YOUR_SILICONFLOW_API_KEY"
+  siliconflow_base_url: "https://api.siliconflow.cn/v1"
+  siliconflow_model: "Pro/deepseek-ai/DeepSeek-V3"
+  # Ollama配置
+  ollama_api_url: "http://localhost:11434/api"
+  ollama_model: "llama3"
+  ollama_api_key: ""
+  # 模型参数配置
+  model_parameters:
+    temperature: 0.7
+    top_p: 0.9
+
+# 提示词模板配置
+prompt:
+  default_type: "medical"  # 默认使用的提示词类型
+  templates_dir: "src/config/prompts"  # 提示词模板目录
+
+# 处理配置
+processing:
+  disable_summary: false  # 是否禁用摘要理解生成功能
+  batch_size: 16  # 批处理大小
+  max_workers: 4  # 最大线程数
