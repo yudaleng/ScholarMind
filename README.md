@@ -7,7 +7,7 @@
 > 🚀 ScholarMind is a powerful academic literature processing tool, designed specifically for researchers. It supports multi-source data integration, literature deduplication, journal indicator analysis, and AI-driven abstract understanding features.
 
 ---
-English | [简体中文](https://github.com/yudaleng/ScholarMind/main/docs/README.zh-CN.md)
+English | [简体中文](https://github.com/yudaleng/ScholarMind/blob/main/docs/README.zh-CN.md)
 ## ✨ Features
 
 - 📚 **Multi-Source Integration**: Supports PubMed, Web of Science, ScienceDirect, and more  

@@ -7,7 +7,7 @@
 > 🚀 ScholarMind 是一款强大的学术文献处理工具，专为研究人员打造。支持多源数据整合、文献去重、期刊指标分析以及AI驱动的摘要理解功能。
 
 ---
-简体中文 | [English](https://github.com/yudaleng/ScholarMind/main/README.md)
+简体中文 | [English](https://github.com/yudaleng/ScholarMind/blob/main/README.md)
 ## ✨ 特性亮点
 
 - 📚 **多数据源集成**：支持 PubMed、Web of Science、ScienceDirect 等数据库  
