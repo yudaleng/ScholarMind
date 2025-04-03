@@ -63,7 +63,7 @@ class ScienceDirectParser(BaseParser):
             entry_text: 论文条目文本
             
         返回:
-            包含论文信息的字典
+            包含论文信息的字典，如果不是有效的学术文章格式则返回None
         """
         # 初始化记录
         record = {
@@ -82,6 +82,27 @@ class ScienceDirectParser(BaseParser):
         }
         
         lines = entry_text.split('\n')
+        
+        # 格式验证: 检查是否符合学术文章基本格式
+        if len(lines) < 3:  # 至少应包含作者、标题和期刊信息
+            logger.debug("条目行数过少，不符合学术文章格式")
+            return None
+            
+        # 检查是否包含卷号信息
+        has_volume = False
+        for line in lines:
+            if re.search(r'Volume\s+\d+', line):
+                has_volume = True
+                break
+                
+        # 检查是否包含Abstract和Keywords部分
+        has_abstract = 'Abstract' in entry_text or 'Abstract:' in entry_text
+        has_keywords = 'Keywords' in entry_text or 'Keywords:' in entry_text
+        
+        # 如果缺少卷号、摘要或关键词，可能不是标准学术文章
+        if not (has_volume and has_abstract and has_keywords):
+            logger.debug(f"条目缺少标准学术文章格式元素: Volume存在:{has_volume}, Abstract存在:{has_abstract}, Keywords存在:{has_keywords}")
+            return None
         
         # 第一行通常是作者
         if lines:
@@ -169,89 +190,65 @@ class ScienceDirectParser(BaseParser):
                 article_id_match = re.search(article_id_pattern, line)
                 if article_id_match and line.startswith(article_id_match.group(1)):
                     record['pages'] = article_id_match.group(1)
+        
+        # 提取摘要 - 改进的解析逻辑
+        abstract_text = ''
+        abstract_start_idx = -1
+        keywords_start_idx = -1
+        
+        # 找到Abstract和Keywords的开始位置
+        for i, line in enumerate(lines):
+            if (line.startswith('Abstract:') or line == 'Abstract') and abstract_start_idx == -1:
+                abstract_start_idx = i
+                # 如果Abstract后面有冒号，可能摘要在同一行
+                if ':' in line:
+                    abstract_text = line.split(':', 1)[1].strip() + ' '
+            elif (line.startswith('Keywords:') or line == 'Keywords') and keywords_start_idx == -1:
+                keywords_start_idx = i
+                break
+        
+        # 如果找到了Abstract和Keywords标记，提取中间的内容作为摘要
+        if abstract_start_idx != -1 and keywords_start_idx != -1:
+            # 从Abstract的下一行到Keywords的前一行
+            start_line = abstract_start_idx + 1
+            # 如果Abstract后面有冒号且已经提取了部分摘要，不需要再次包含第一行
+            if abstract_text and ':' in lines[abstract_start_idx]:
+                start_line = abstract_start_idx + 1
             
-            # 提取摘要
-            if line.startswith('Abstract:') or line == 'Abstract':
-                abstract_index = lines.index(line)
-                
-                # 寻找摘要结束位置（通常是关键词开始前）
-                keywords_index = None
-                for i in range(abstract_index + 1, len(lines)):
-                    if lines[i].startswith('Keywords:') or lines[i] == 'Keywords':
-                        keywords_index = i
-                        break
-                
-                # 提取摘要文本
-                abstract_end = keywords_index if keywords_index else len(lines)
-                abstract_lines = lines[abstract_index + 1:abstract_end]
-                record['abstract'] = ' '.join(line.strip() for line in abstract_lines if line.strip())
+            abstract_lines = lines[start_line:keywords_start_idx]
+            additional_abstract = ' '.join(line.strip() for line in abstract_lines if line.strip())
+            abstract_text += additional_abstract
+            record['abstract'] = abstract_text.strip()
+        
+        # 提取关键词 - 改进的解析逻辑
+        if keywords_start_idx != -1:
+            # 从Keywords后开始，直到下一个段落开始
+            keywords_text = ''
+            i = keywords_start_idx + 1
             
-            # 提取关键词
-            if line.startswith('Keywords:') or line == 'Keywords':
-                keywords_index = lines.index(line)
-                
-                # 关键词可能在下一行或多行
-                if keywords_index < len(lines) - 1:
-                    # 查找关键词结束位置
-                    next_section_index = len(lines)
-                    for i in range(keywords_index + 1, len(lines)):
-                        if lines[i].strip() and (lines[i].strip().endswith(':') or lines[i].strip() == 'Background' or lines[i].strip() == 'Methods' or lines[i].strip() == 'Results' or lines[i].strip() == 'Conclusion'):
-                            next_section_index = i
-                            break
-                    
-                    # 提取关键词文本
-                    keywords_lines = lines[keywords_index + 1:next_section_index]
-                    keywords_text = ' '.join(line.strip() for line in keywords_lines if line.strip())
-                    
-                    # 移除关键词前的冒号
-                    keywords_text = keywords_text.lstrip(':').strip()
-                    
-                    # 关键词通常以分号分隔
+            # 检查Keywords行是否包含冒号，如果有冒号，可能关键词在同一行
+            keywords_line = lines[keywords_start_idx]
+            if ':' in keywords_line:
+                # 提取冒号后的内容作为关键词的开始
+                keywords_text = keywords_line.split(':', 1)[1].strip()
+            
+            # 继续提取后续行的关键词，直到遇到空行或新段落标志
+            while i < len(lines) and lines[i].strip():
+                if lines[i].strip().startswith(('Background', 'Methods', 'Results', 'Conclusion')):
+                    break
+                keywords_text += ' ' + lines[i].strip()
+                i += 1
+            
+            # 清理关键词文本
+            keywords_text = keywords_text.strip()
+            
+            # 如果关键词文本不为空，进行后续处理
+            if keywords_text:
+                # 关键词通常以分号或逗号分隔
+                if ';' in keywords_text:
                     record['keywords'] = keywords_text.replace(';', ', ')
-        
-        # 特殊处理：如果能在文本中找到Abstract部分
-        if not record['abstract']:
-            abstract_start = entry_text.find('Abstract')
-            if abstract_start != -1:
-                # 查找关键词部分的开始位置
-                keywords_start = entry_text.find('Keywords', abstract_start)
-                if keywords_start != -1:
-                    # 提取摘要部分（从Abstract后到Keywords前）
-                    abstract_text = entry_text[abstract_start + 8:keywords_start].strip()
-                    record['abstract'] = abstract_text
                 else:
-                    # 尝试查找其他可能的结束标记
-                    possible_ends = ['Background', 'Methods', 'Results', 'Conclusion']
-                    end_pos = float('inf')
-                    
-                    for marker in possible_ends:
-                        pos = entry_text.find(marker, abstract_start)
-                        if pos != -1 and pos < end_pos:
-                            end_pos = pos
-                    
-                    if end_pos < float('inf'):
-                        abstract_text = entry_text[abstract_start + 8:end_pos].strip()
-                        record['abstract'] = abstract_text
-        
-        # 特殊处理：如果能在文本中找到Keywords部分
-        if not record['keywords']:
-            keywords_start = entry_text.find('Keywords')
-            if keywords_start != -1:
-                # 找到Keywords之后的内容直到下一个结构化部分
-                remaining_text = entry_text[keywords_start + 8:].strip()
-                
-                # 移除关键词前的冒号
-                remaining_text = remaining_text.lstrip(':').strip()
-                
-                # 关键词通常在一行中，用分号分隔
-                # 查找下一个段落的开始
-                next_para = remaining_text.find('\n\n')
-                if next_para != -1:
-                    keywords_text = remaining_text[:next_para].strip()
-                else:
-                    keywords_text = remaining_text.strip()
-                
-                record['keywords'] = keywords_text.replace(';', ', ')
+                    record['keywords'] = keywords_text
         
         return record
     

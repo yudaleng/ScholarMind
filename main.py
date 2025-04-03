@@ -46,55 +46,93 @@ class CombinedProcessor:
             # 重合判断前的记录总数
             total_before = len(df)
             
-            # 1. 先标准化title和doi字段，确保比较准确
-            for col in ['title', 'doi']:
-                if col in df.columns:
-                    # 将列表类型转换为字符串
-                    df[col] = df[col].apply(
-                        lambda x: x[0] if isinstance(x, list) and len(x) > 0 else 
-                                (', '.join(x) if isinstance(x, list) else x)
-                    )
+            # 1. 标准化doi字段，确保比较准确
+            if 'doi' in df.columns:
+                # 将列表类型转换为字符串
+                df['doi'] = df['doi'].apply(
+                    lambda x: x[0] if isinstance(x, list) and len(x) > 0 else 
+                            (', '.join(x) if isinstance(x, list) else x)
+                )
+                
+                # 移除PubMed特有的"[doi]"后缀和所有空格
+                df['doi'] = df['doi'].apply(
+                    lambda x: x.replace(" [doi]", "").strip().lower() if isinstance(x, str) else x
+                )
+                
+                # 处理特殊格式的DOI
+                def clean_doi(doi_str):
+                    if not isinstance(doi_str, str) or pd.isna(doi_str):
+                        return doi_str
                     
-                    # 对于doi字段，移除PubMed特有的"[doi]"后缀
-                    if col == 'doi':
-                        df[col] = df[col].apply(
-                            lambda x: x.replace(" [doi]", "").strip() if isinstance(x, str) else x
-                        )
+                    # 移除[doi]和[pii]标记
+                    doi_str = doi_str.replace(" [doi]", "").replace(" [pii]", "")
                     
-                    # 标准化：去除空格、转换为小写
-                    df[col] = df[col].apply(
-                        lambda x: str(x).strip().lower() if pd.notna(x) else ""
-                    )
-            
+                    # 处理包含逗号的DOI，提取10.xxxx/开头的部分
+                    if "," in doi_str:
+                        parts = [part.strip() for part in doi_str.split(",")]
+                        # 尝试找出有效的DOI部分（通常以10.开头）
+                        valid_doi = None
+                        for part in parts:
+                            if part.startswith("10."):
+                                valid_doi = part
+                                break
+                        return valid_doi if valid_doi else doi_str
+                    
+                    return doi_str.strip().lower()
+                
+                df['doi'] = df['doi'].apply(clean_doi)
+                
             # 2. 创建标识数据重合的列
             df['is_duplicate'] = False
             
-            # 3. 找出title和doi相同的记录
-            if 'title' in df.columns and 'doi' in df.columns:
-                # 用于存储已处理过的(title, doi)组合
-                processed_pairs = set()
+            # 3. 只根据doi判断重复记录
+            if 'doi' in df.columns:
+                # 过滤掉空的doi
+                valid_doi_df = df[df['doi'].notna() & (df['doi'] != "")]
+                
+                # 用于存储已处理过的doi
+                processed_dois = set()
                 
                 # 设置数据源优先级: wos > pubmed > sciencedirect
-                # 按source_type排序，确保WOS最优先
                 source_priority = {'wos': 3, 'pubmed': 2, 'sciencedirect': 1}
                 df['source_priority'] = df['source_type'].map(lambda x: source_priority.get(x, 0))
                 df = df.sort_values(by='source_priority', ascending=False)
                 
                 for idx, row in df.iterrows():
-                    title = row['title']
                     doi = row['doi']
-                    source_type = row['source_type']
                     
-                    # 如果title和doi都不为空，则判断是否重复
-                    if title and doi:
-                        pair = (title, doi)
+                    # 如果doi不为空，则判断是否重复
+                    if doi and pd.notna(doi) and doi != "":
+                        # 标准化doi格式
+                        if isinstance(doi, str):
+                            # 移除[pii]标记
+                            doi = doi.replace(" [pii]", "")
+                            
+                            # 处理包含逗号的DOI
+                            if "," in doi:
+                                parts = [p.strip() for p in doi.split(",")]
+                                # 尝试找出有效的DOI部分（通常以10.开头）
+                                valid_doi = None
+                                for part in parts:
+                                    if part.startswith("10."):
+                                        valid_doi = part
+                                        break
+                                if valid_doi:
+                                    doi = valid_doi
+                            
+                            # 移除可能的前缀
+                            if doi.startswith("https://doi.org/"):
+                                doi = doi[16:]
+                            elif doi.startswith("doi:"):
+                                doi = doi[4:]
+                            doi = doi.strip().lower()
                         
-                        if pair in processed_pairs:
-                            # 如果这个组合已经处理过，说明它是重复的
+                        if doi in processed_dois:
+                            # 如果这个doi已经处理过，说明它是重复的
                             df.loc[idx, 'is_duplicate'] = True
                         else:
-                            # 第一次遇到这个组合，添加到集合中
-                            processed_pairs.add(pair)
+                            # 第一次遇到这个doi，添加到集合中
+                            processed_dois.add(doi)
             
             # 4. 排除重复数据
             df = df[~df['is_duplicate']]
@@ -113,7 +151,8 @@ class CombinedProcessor:
         
         # 添加期刊指标
         df = self.add_journal_metrics(df)
-        
+        logger.info(f"期刊指标添加完成，共处理 {len(df)} 条记录")
+
         # 根据数据源类型生成链接
         if 'source_type' in df.columns:
             # 处理PubMed链接 - 检查pmid列是否存在
@@ -152,9 +191,30 @@ class CombinedProcessor:
                     except (TypeError, ValueError):
                         pass
                     
-                    # 移除可能存在的[doi]后缀
-                    if isinstance(doi, str) and " [doi]" in doi:
-                        doi = doi.replace(" [doi]", "").strip()
+                    # 定义DOI清洗函数
+                    def clean_doi_format(d):
+                        if not isinstance(d, str) or not d:
+                            return d
+                        
+                        # 移除[doi]和[pii]标记
+                        d = d.replace(" [doi]", "").replace(" [pii]", "")
+                        
+                        # 处理包含逗号的DOI
+                        if "," in d:
+                            parts = [p.strip() for p in d.split(",")]
+                            # 尝试找出有效的DOI部分（通常以10.开头）
+                            for part in parts:
+                                if part.startswith("10."):
+                                    d = part
+                                    break
+                        
+                        # 移除可能的前缀
+                        if d.startswith("https://doi.org/"):
+                            d = d[16:]
+                        elif d.startswith("doi:"):
+                            d = d[4:]
+                            
+                        return d.strip()
                     
                     # 处理列表
                     if isinstance(doi, list):
@@ -162,16 +222,11 @@ class CombinedProcessor:
                         for d in doi:
                             try:
                                 if d and not pd.isna(d):
-                                    # 处理字符串中的[doi]后缀
-                                    if isinstance(d, str) and " [doi]" in d:
-                                        d = d.replace(" [doi]", "").strip()
-                                    return f"https://doi.org/{d}"
+                                    clean_d = clean_doi_format(d)
+                                    if clean_d:
+                                        return f"https://doi.org/{clean_d}"
                             except (TypeError, ValueError):
-                                if d:
-                                    # 处理字符串中的[doi]后缀
-                                    if isinstance(d, str) and " [doi]" in d:
-                                        d = d.replace(" [doi]", "").strip()
-                                    return f"https://doi.org/{d}"
+                                pass
                         return ""
                     
                     # 处理NumPy数组
@@ -181,19 +236,20 @@ class CombinedProcessor:
                             for d in doi:
                                 try:
                                     if d and not pd.isna(d):
-                                        # 处理字符串中的[doi]后缀
-                                        if isinstance(d, str) and " [doi]" in d:
-                                            d = d.replace(" [doi]", "").strip()
-                                        return f"https://doi.org/{d}"
+                                        clean_d = clean_doi_format(d)
+                                        if clean_d:
+                                            return f"https://doi.org/{clean_d}"
                                 except (TypeError, ValueError):
                                     continue
                         return ""
                     
                     # 处理单个值
                     if doi and not pd.isna(doi):
-                        return f"https://doi.org/{doi}"
-                    else:
-                        return ""
+                        clean_doi = clean_doi_format(doi)
+                        if clean_doi:
+                            return f"https://doi.org/{clean_doi}"
+                    
+                    return ""
                 
                 df['doi_link'] = df['doi'].apply(safe_doi_link)
                 logger.info("成功创建DOI链接")
