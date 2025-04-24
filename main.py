@@ -4,6 +4,7 @@ import pandas as pd
 import logging
 import numpy as np
 from tqdm import tqdm
+from typing import Dict
 
 from src.config.config_manager import load_config
 from src.api.journal_metrics import get_journal_metrics
@@ -19,22 +20,34 @@ logger = logging.getLogger(__name__)
 class CombinedProcessor:
     """处理多数据源的组合处理器"""
     
-    def __init__(self, llm_client=None, get_journal_metrics_func=None, prompt_type="medical", 
-                batch_size=16, max_workers=4, ai_fields=None):
+    def __init__(self, config: Dict, llm_client=None, get_journal_metrics_func=None):
         """初始化处理器"""
+        self.config = config
         self.llm_client = llm_client
-        self.get_journal_metrics_func = get_journal_metrics_func
-        self.prompt_type = prompt_type
-        self.batch_size = batch_size
-        self.max_workers = max_workers
-        self.ai_fields = ai_fields
+        self.get_journal_metrics_func = get_journal_metrics_func # 指标函数可能为 None
         
-        # 从配置文件获取期刊指标配置
-        config = load_config()
-        metrics_config = config.get("journal_metrics", {})
-        self.metrics_to_fetch = metrics_config.get("metrics_to_fetch", ["sciif", "sci"])
-        self.metrics_column_mapping = metrics_config.get("metrics_column_mapping", {})
-    
+        # 从配置中获取控制标志
+        self.journal_metrics_enabled = self.config.get("journal_metrics", {}).get("enabled", True)
+        self.llm_enabled = self.config.get("llm", {}).get("enabled", True)
+        
+        # 仅在启用时获取相关配置
+        if self.journal_metrics_enabled:
+            metrics_config = self.config.get("journal_metrics", {})
+            self.metrics_to_fetch = metrics_config.get("metrics_to_fetch", [])
+            self.metrics_column_mapping = metrics_config.get("metrics_column_mapping", {})
+        else:
+            self.metrics_to_fetch = []
+            self.metrics_column_mapping = {}
+            self.get_journal_metrics_func = None
+            
+        if not self.llm_enabled:
+            self.llm_client = None
+
+        self.prompt_type = self.config.get("prompt", {}).get("default_type", "medical")
+        self.batch_size = self.config.get("processing", {}).get("batch_size", 16)
+        self.max_workers = self.config.get("processing", {}).get("max_workers", 4)
+        self.ai_fields = OutputConfig.get_fields(self.prompt_type)
+
     def process_data(self, input_df: pd.DataFrame) -> pd.DataFrame:
         """处理来自多个数据源的合并数据"""
         df = input_df.copy()
@@ -150,8 +163,11 @@ class CombinedProcessor:
                 logger.info("未检测到重复记录")
         
         # 添加期刊指标
-        df = self.add_journal_metrics(df)
-        logger.info(f"期刊指标添加完成，共处理 {len(df)} 条记录")
+        if self.journal_metrics_enabled:
+            df = self.add_journal_metrics(df)
+            logger.info(f"期刊指标添加完成，共处理 {len(df)} 条记录")
+        else:
+            logger.info("期刊指标获取功能已禁用，跳过添加指标。")
 
         # 根据数据源类型生成链接
         if 'source_type' in df.columns:
@@ -286,14 +302,8 @@ class CombinedProcessor:
                 if doi_mask.any():
                     df.loc[doi_mask, 'title_link'] = df.loc[doi_mask, 'doi_link']
         
-        # 添加AI生成的相关内容
-        if not self.llm_client or ('abstract' not in df.columns):
-            # 如果没有LLM客户端或没有摘要，跳过摘要理解功能
-            logger.warning("跳过摘要理解功能: " + 
-                          ("未配置LLM客户端" if not self.llm_client else "缺少abstract字段"))
-            # 添加空的摘要理解列
-            df['summary'] = ""
-        else:
+        # 添加AI生成的相关内容 (如果启用且有LLM客户端)
+        if self.llm_enabled and self.llm_client and ('abstract' in df.columns):
             logger.info("开始使用AI进行摘要理解...")
             
             # 提取摘要
@@ -304,12 +314,12 @@ class CombinedProcessor:
             # 获取AI生成的JSON结果
             ai_results = self.llm_client.batch_generate_summaries(
                 abstracts, 
-                batch_size=self.batch_size,
+                batch_size=self.max_workers, # 使用 max_workers 作为并发数
                 prompt_type=self.prompt_type
             )
             
             # 创建新的空列
-            if self.ai_fields is not None:
+            if self.ai_fields:
                 for field in self.ai_fields:
                     if field not in df.columns:
                         df[field] = ""
@@ -322,14 +332,31 @@ class CombinedProcessor:
             
                 logger.info(f"摘要理解生成完成，共处理 {len(abstracts)} 条摘要")
             else:
-                logger.warning("未配置AI生成字段，跳过摘要理解功能")
-        
+                logger.warning("未配置AI生成字段（或提示词模板未定义字段），跳过AI摘要理解结果填充")
+        elif not self.llm_enabled:
+             logger.info("LLM 摘要理解功能已禁用，跳过处理。")
+        elif not self.llm_client:
+             logger.warning("LLM 客户端未成功初始化，跳过AI摘要理解功能。")
+        elif 'abstract' not in df.columns:
+             logger.warning("数据中缺少 'abstract' 列，跳过AI摘要理解功能。")
+        # 如果禁用了LLM或者没有客户端/摘要，确保AI字段存在（如果定义了）但为空
+        elif self.ai_fields:
+             for field in self.ai_fields:
+                 if field not in df.columns:
+                     df[field] = ""
+
         return df
     
     def add_journal_metrics(self, df: pd.DataFrame) -> pd.DataFrame:
         """添加期刊指标"""
-        if not self.get_journal_metrics_func:
-            logger.warning("未配置期刊指标获取函数，跳过期刊指标添加")
+        # 再次检查是否启用，以及是否有获取函数
+        if not self.journal_metrics_enabled or not self.get_journal_metrics_func:
+            logger.info("期刊指标获取功能已禁用或未配置获取函数，跳过。")
+             # 确保列存在，即使是空的
+            for metric in self.metrics_to_fetch:
+                column_name = self.metrics_column_mapping.get(metric, metric)
+                if column_name not in df.columns:
+                     df[column_name] = ""
             return df
         
         try:
@@ -345,6 +372,11 @@ class CombinedProcessor:
                 )
             else:
                 logger.warning("数据中缺少journal列，跳过期刊指标添加")
+                # 确保列存在
+                for metric in self.metrics_to_fetch:
+                    column_name = self.metrics_column_mapping.get(metric, metric)
+                    if column_name not in df.columns:
+                        df[column_name] = ""
                 return df
             
             logger.info(f"开始获取 {len(journals)} 种期刊的指标...")
@@ -359,25 +391,23 @@ class CombinedProcessor:
                 journal_metrics = self.get_journal_metrics_func(
                     journal_name=journal,
                     metrics_to_fetch=self.metrics_to_fetch,
-                    metrics_column_mapping=self.metrics_column_mapping
+                    metrics_column_mapping=self.metrics_column_mapping # 传递映射以正确解析结果
                 )
                 
                 if journal_metrics:
-                    metrics_dict[journal.lower()] = {}
-                    
-                    # 重命名指标列
-                    for metric_key, metric_value in journal_metrics.items():
-                        column_name = self.metrics_column_mapping.get(metric_key, metric_key)
-                        metrics_dict[journal.lower()][column_name] = metric_value
+                    # 使用标准化的期刊名作为键
+                    metrics_dict[journal.strip().lower()] = journal_metrics
             
-            # 为每个指标创建列
-            for metric in self.metrics_to_fetch:
-                column_name = self.metrics_column_mapping.get(metric, metric)
+            # 为每个指标创建列 (使用映射后的列名)
+            for metric_key in self.metrics_to_fetch:
+                column_name = self.metrics_column_mapping.get(metric_key, metric_key)
+                if column_name not in df.columns:
+                    df[column_name] = ""
                 
-                # 根据期刊名映射添加指标列
+                # 根据标准化的期刊名映射添加指标列
                 df[column_name] = df['journal_normalized'].map(
-                    lambda j: metrics_dict.get(j, {}).get(column_name, '')
-                    if isinstance(j, str) else ''
+                    lambda j_norm: metrics_dict.get(j_norm, {}).get(column_name, '') # 使用映射后的列名查找
+                    if isinstance(j_norm, str) else ''
                 )
             
             # 删除临时列
@@ -387,7 +417,7 @@ class CombinedProcessor:
             logger.info(f"期刊指标获取完成，共处理 {len(journals)} 种期刊")
         except Exception as e:
             logger.error(f"获取期刊指标时出错: {str(e)}")
-            # 创建所有配置的指标列
+            # 创建所有配置的指标列，确保它们存在
             for metric in self.metrics_to_fetch:
                 column_name = self.metrics_column_mapping.get(metric, metric)
                 if column_name not in df.columns:
@@ -433,58 +463,80 @@ def main():
     
     logger.info(f"当前使用的提示词类型: {prompt_type}")
     
-    # 从配置文件获取处理参数
-    disable_summary = config.get("processing", {}).get("disable_summary", False)
-    batch_size = config.get("processing", {}).get("batch_size", 16)
-    max_workers = config.get("processing", {}).get("max_workers", 4)
+    # 获取处理参数
+    processing_config = config.get("processing", {})
+    batch_size = processing_config.get("batch_size", 16)
+    max_workers = processing_config.get("max_workers", 4)
     
     logger.info(f"批处理大小: {batch_size}, 最大线程数: {max_workers}")
     
-    # 初始化LLM客户端（如果启用摘要理解功能）
+    # 获取功能启用标志
+    llm_enabled = config.get("llm", {}).get("enabled", True)
+    journal_metrics_enabled = config.get("journal_metrics", {}).get("enabled", True)
+    
+    # 初始化LLM客户端（如果启用）
     llm_client = None
-    if not disable_summary:
+    if llm_enabled:
         try:
-            # 从配置文件获取LLM类型
-            llm_type = config.get("llm", {}).get("type", "vllm")
-            # 获取模型参数
-            model_params = config.get("llm", {}).get("model_parameters", {})
+            llm_config = config.get("llm", {})
+            llm_type = llm_config.get("type", "vllm")
+            model_params = llm_config.get("model_parameters", {})
             temperature = model_params.get("temperature", 0.7)
             top_p = model_params.get("top_p", 0.9)
+            max_tokens = model_params.get("max_tokens", 4096)
             
             if llm_type == "vllm":
-                llm_client = create_llm_client(
-                    "vllm",
-                    api_url=config["llm"]["vllm_api_url"],
-                    api_key=config["llm"]["vllm_api_key"],
-                    model=config["llm"].get("vllm_model", "qwen"),
-                    temperature=temperature,
-                    top_p=top_p
-                )
-                logger.info(f"使用本地VLLM模型: {config['llm'].get('vllm_model', 'qwen')}")
+                client_kwargs = {
+                    "api_url": llm_config["vllm_api_url"],
+                    "api_key": llm_config["vllm_api_key"],
+                    "model": llm_config.get("vllm_model", "qwen"),
+                    "temperature": temperature,
+                    "top_p": top_p,
+                    "max_tokens": max_tokens
+                }
+                llm_client = create_llm_client("vllm", **client_kwargs)
+                logger.info(f"使用本地VLLM模型: {client_kwargs['model']}")
             elif llm_type == "siliconflow":
-                llm_client = create_llm_client(
-                    "siliconflow",
-                    api_key=config["llm"]["siliconflow_api_key"],
-                    base_url=config["llm"]["siliconflow_base_url"],
-                    model=config["llm"]["siliconflow_model"],
-                    temperature=temperature,
-                    top_p=top_p
-                )
-                logger.info(f"使用硅基流动大模型: {config['llm']['siliconflow_model']}")
+                client_kwargs = {
+                    "api_key": llm_config["siliconflow_api_key"],
+                    "base_url": llm_config["siliconflow_base_url"],
+                    "model": llm_config["siliconflow_model"],
+                    "temperature": temperature,
+                    "top_p": top_p,
+                    "rpm": llm_config["siliconflow_rpm"],
+                    "tpm": llm_config["siliconflow_tpm"],
+                    "max_tokens": max_tokens
+                }
+                llm_client = create_llm_client("siliconflow", **client_kwargs)
+                logger.info(f"使用硅基流动大模型: {client_kwargs['model']}")
             elif llm_type == "ollama":
-                llm_client = create_llm_client(
-                    "ollama",
-                    api_url=config["llm"].get("ollama_api_url", "http://localhost:11434/api"),
-                    model=config["llm"].get("ollama_model", "llama3"),
-                    temperature=temperature,
-                    top_p=top_p,
-                    api_key=config["llm"].get("ollama_api_key", "")
-                )
-                logger.info(f"使用Ollama模型: {config['llm'].get('ollama_model', 'llama3')}")
+                client_kwargs = {
+                    "api_url": llm_config.get("ollama_api_url", "http://localhost:11434/api"),
+                    "model": llm_config.get("ollama_model", "llama3"),
+                    "temperature": temperature,
+                    "top_p": top_p,
+                    "api_key": llm_config.get("ollama_api_key", ""),
+                    "max_tokens": max_tokens
+                }
+                llm_client = create_llm_client("ollama", **client_kwargs)
+                logger.info(f"使用Ollama模型: {client_kwargs['model']}")
             else:
                 raise ValueError(f"不支持的LLM类型: {llm_type}")
+        except KeyError as e:
+            logger.error(f"初始化LLM客户端失败，缺少配置项: {e}。摘要理解功能将被禁用。")
+            llm_client = None
         except Exception as e:
-            logger.warning(f"初始化LLM客户端失败，摘要理解功能将被禁用: {str(e)}")
+            logger.warning(f"初始化LLM客户端失败: {str(e)}。摘要理解功能将被禁用。")
+            llm_client = None # 确保客户端为 None
+    else:
+        logger.info("LLM 摘要理解功能已在配置中禁用。")
+        
+    # 决定是否使用期刊指标函数
+    journal_metrics_func = get_journal_metrics if journal_metrics_enabled else None
+    if not journal_metrics_enabled:
+         logger.info("期刊指标获取功能已在配置中禁用。")
+         if config.get("easyscholar_api_key") == "*" or not config.get("easyscholar_api_key"):
+             logger.warning("未配置 easyscholar_api_key，即使启用也无法获取期刊指标。")
     
     # 创建解析器管理器，解析和预处理所有数据源
     parsers_manager = ParsersManager(sources)
@@ -503,12 +555,9 @@ def main():
     
     # 创建组合处理器，进行合并后的数据处理
     combined_processor = CombinedProcessor(
+        config=config,
         llm_client=llm_client,
-        get_journal_metrics_func=get_journal_metrics,
-        prompt_type=prompt_type,
-        batch_size=batch_size,
-        max_workers=max_workers,
-        ai_fields=ai_fields
+        get_journal_metrics_func=journal_metrics_func
     )
     
     # 处理合并数据
@@ -516,7 +565,12 @@ def main():
     
     # 使用ExcelFormatter格式化并保存
     formatter = ExcelFormatter()
-    success = formatter.format_excel(processed_df, output_excel_path, separate_sheets=output_config.get("separate_sheets", True), ai_fields=ai_fields)
+    success = formatter.format_excel(
+        processed_df,
+        output_excel_path,
+        separate_sheets=output_config.get("separate_sheets", True),
+        ai_fields=ai_fields
+    )
     
     if success:
         logger.info(f"多数据源处理完成，结果已保存到: {output_excel_path}")

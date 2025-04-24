@@ -52,6 +52,7 @@ easyscholar_api_key: "YOUR_EASYSCHOLAR_API_KEY"
 
 # Journal metrics configuration
 journal_metrics:
+  enabled: true # Set to false to disable fetching journal metrics
   # Specify which metrics to fetch. Refer to Appendix 1 at https://www.easyscholar.cc/console/user/open for available abbreviations.
   metrics_to_fetch:
     - "sciif"
@@ -85,6 +86,7 @@ output:
 
 # Large Language Model (LLM) configuration
 llm:
+  enabled: true # Set to false to disable LLM summary generation
   type: "vllm"  # Available types: vllm / siliconflow / ollama
   vllm_api_url: "http://127.0.0.1:8000/v1/chat/completions"
   vllm_api_key: ""
@@ -93,6 +95,8 @@ llm:
   siliconflow_api_key: "YOUR_SILICONFLOW_API_KEY"
   siliconflow_base_url: "https://api.siliconflow.cn/v1"
   siliconflow_model: "Pro/deepseek-ai/DeepSeek-V3"
+  siliconflow_rpm: 1000   # Requests Per Minute limit for SiliconFlow
+  siliconflow_tpm: 50000 # Tokens Per Minute limit for SiliconFlow
 
   ollama_api_url: "http://localhost:11434/api"
   ollama_model: "llama3"
@@ -101,6 +105,7 @@ llm:
   model_parameters:
     temperature: 0.7
     top_p: 0.9
+    max_tokens: 4096 # Maximum number of tokens the model can generate
 
 # Prompt template configuration
 prompt:

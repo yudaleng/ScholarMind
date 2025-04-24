@@ -6,6 +6,7 @@ easyscholar_api_key: "YOUR_EASYSCHOLAR_API_KEY"
 
 # 期刊指标配置
 journal_metrics:
+  enabled: true # 控制是否启用期刊指标获取功能
   # 需要查询的指标列表
   metrics_to_fetch:
     - "sciif"   # SCI影响因子-JCR
@@ -35,6 +36,7 @@ output:
 
 # 大语言模型配置
 llm:
+  enabled: true # 控制是否启用LLM摘要理解功能
   type: "vllm"  # 可选: vllm, siliconflow, ollama
   # VLLM配置
   vllm_api_url: "http://127.0.0.1:8000/v1/chat/completions"
@@ -44,6 +46,8 @@ llm:
   siliconflow_api_key: "YOUR_SILICONFLOW_API_KEY"
   siliconflow_base_url: "https://api.siliconflow.cn/v1"
   siliconflow_model: "Pro/deepseek-ai/DeepSeek-V3"
+  siliconflow_rpm: 1000  # 每分钟请求数限制
+  siliconflow_tpm: 50000 # 每分钟令牌数限制
   # Ollama配置
   ollama_api_url: "http://localhost:11434/api"
   ollama_model: "llama3"
@@ -52,6 +56,7 @@ llm:
   model_parameters:
     temperature: 0.7
     top_p: 0.9
+    max_tokens: 4096 # 控制模型生成的最大令牌数
 
 # 提示词模板配置
 prompt:

@@ -43,13 +43,25 @@ def load_config(config_path=None):
         logging.error(f"加载配置文件失败: {str(e)}")
         sys.exit(1)
     
-    if "easyscholar_api_key" not in config:
-        logging.error("配置文件中缺少easyscholar_api_key字段")
-        sys.exit(1)
-    
+    # --- Journal Metrics 配置 --- 
+    if "journal_metrics" not in config:
+        config["journal_metrics"] = {"enabled": True, "metrics_to_fetch": [], "metrics_column_mapping": {}}
+    if "enabled" not in config["journal_metrics"]:
+        config["journal_metrics"]["enabled"] = True
+    if "metrics_to_fetch" not in config["journal_metrics"]:
+        config["journal_metrics"]["metrics_to_fetch"] = []
+    if "metrics_column_mapping" not in config["journal_metrics"]:
+        config["journal_metrics"]["metrics_column_mapping"] = {}
+        
+    if "easyscholar_api_key" not in config and config["journal_metrics"]["enabled"]:
+        logging.warning("Journal metrics 功能已启用，但配置文件中缺少 easyscholar_api_key 字段。将无法获取指标。")
+        # 不强制退出，允许在没有 key 的情况下运行，只是不获取指标
+
+    # --- LLM 配置 --- 
     if "llm" not in config:
-        logging.info("配置文件中缺少llm字段（用于大语言模型配置），创建默认配置")
+        logging.info("配置文件中缺少llm字段，创建默认配置")
         config["llm"] = {
+            "enabled": False,
             "type": "vllm",
             "vllm_api_url": "http://localhost:8000/v1/completions",
             "vllm_api_key": "",
@@ -59,6 +71,9 @@ def load_config(config_path=None):
                 "top_p": 0.9
             }
         }
+    
+    if "enabled" not in config["llm"]:
+        config["llm"]["enabled"] = False
     
     if "type" not in config["llm"]:
         config["llm"]["type"] = "vllm"
@@ -74,6 +89,9 @@ def load_config(config_path=None):
     
     if "top_p" not in config["llm"]["model_parameters"]:
         config["llm"]["model_parameters"]["top_p"] = 0.9
+    
+    if "max_tokens" not in config["llm"]["model_parameters"]:
+        config["llm"]["model_parameters"]["max_tokens"] = 4096
     
     model_type = config["llm"]["type"].lower()
     
@@ -99,6 +117,12 @@ def load_config(config_path=None):
         
         if "siliconflow_model" not in config["llm"]:
             config["llm"]["siliconflow_model"] = "deepseek-ai/DeepSeek-V3"
+        
+        if "siliconflow_rpm" not in config["llm"]:
+            config["llm"]["siliconflow_rpm"] = 3000
+            
+        if "siliconflow_tpm" not in config["llm"]:
+            config["llm"]["siliconflow_tpm"] = 200000
     
     elif model_type == "ollama":
         if "ollama_api_url" not in config["llm"]:
@@ -123,6 +147,11 @@ def load_config(config_path=None):
         config["llm"]["siliconflow_base_url"] = "https://api.siliconflow.cn/v1"
     if "siliconflow_model" not in config["llm"]:
         config["llm"]["siliconflow_model"] = "deepseek-ai/DeepSeek-V3"
+    
+    if "siliconflow_rpm" not in config["llm"]:
+        config["llm"]["siliconflow_rpm"] = 3000
+    if "siliconflow_tpm" not in config["llm"]:
+        config["llm"]["siliconflow_tpm"] = 200000
     
     if "ollama_api_url" not in config["llm"]:
         config["llm"]["ollama_api_url"] = "http://localhost:11434/api"

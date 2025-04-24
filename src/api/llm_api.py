@@ -9,6 +9,7 @@ import re
 from tqdm import tqdm
 
 from src.api.prompt_templates import PromptTemplate, create_prompt_template, OutputConfig
+from openai import OpenAI, RateLimitError
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -107,7 +108,7 @@ class VllmClient(BaseLLMClient):
 
     def __init__(self, api_url: str, api_key: Optional[str] = None,
                  model: str = "qwen", max_retries: int = 3, timeout: int = 120,
-                 temperature: float = 0.7, top_p: float = 0.9):
+                 temperature: float = 0.7, top_p: float = 0.9, max_tokens: int = 4096):
         """
         初始化VLLM客户端
 
@@ -119,6 +120,7 @@ class VllmClient(BaseLLMClient):
             timeout: 请求超时时间(秒)
             temperature: 温度参数，控制生成文本的随机性
             top_p: Top-p 采样参数
+            max_tokens: 控制生成的最大令牌数
         """
         self.api_url = api_url
         if api_key != "":
@@ -130,6 +132,7 @@ class VllmClient(BaseLLMClient):
         self.timeout = timeout
         self.temperature = temperature
         self.top_p = top_p
+        self.max_tokens = max_tokens
 
     def _prepare_headers(self) -> Dict[str, str]:
         """准备请求头"""
@@ -164,7 +167,7 @@ class VllmClient(BaseLLMClient):
         payload = {
             "messages": messages,
             "temperature": self.temperature,
-            "max_tokens": 4096,
+            "max_tokens": self.max_tokens,
             "top_p": self.top_p,
             "stop": None,
             "model": self.model
@@ -263,8 +266,9 @@ class SiliconFlowClient(BaseLLMClient):
     """
 
     def __init__(self, api_key: str, base_url: str = "https://api.siliconflow.cn/v1",
-                 model: str = "deepseek-ai/DeepSeek-V3", max_retries: int = 3, timeout: int = 120,
-                 temperature: float = 0.1, top_p: float = 1.0):
+                 model: str = "deepseek-ai/DeepSeek-V3", max_retries: int = 5, timeout: int = 120,
+                 temperature: float = 0.1, top_p: float = 1.0,
+                 rpm: int = 3000, tpm: int = 200000, max_tokens: int = 4096):
         """
         初始化硅基流动客户端
 
@@ -276,17 +280,22 @@ class SiliconFlowClient(BaseLLMClient):
             timeout: 请求超时时间(秒)
             temperature: 温度参数，控制生成文本的随机性
             top_p: Top-p 采样参数
+            rpm: 每分钟请求数限制 (当前实现中暂未使用)
+            tpm: 每分钟令牌数限制 (当前实现中暂未使用)
+            max_tokens: 控制生成的最大令牌数
         """
         try:
-            from openai import OpenAI
             # 禁用httpx日志输出
             logging.getLogger("httpx").setLevel(logging.WARNING)
-            self.client = OpenAI(api_key=api_key, base_url=base_url)
+            self.client = OpenAI(api_key=api_key, base_url=base_url, max_retries=0)
             self.model = model
             self.max_retries = max_retries
             self.timeout = timeout
             self.temperature = temperature
             self.top_p = top_p
+            self.rpm = rpm
+            self.tpm = tpm
+            self.max_tokens = max_tokens
         except ImportError:
             logger.error("未安装OpenAI库，请使用 'pip install openai' 安装")
             raise
@@ -313,13 +322,14 @@ class SiliconFlowClient(BaseLLMClient):
         output_fields = prompt_template.get_output_fields()
         default_values = prompt_template.get_default_values()
 
-        for attempt in range(self.max_retries):
+        current_retry = 0
+        while current_retry < self.max_retries:
             try:
                 response = self.client.chat.completions.create(
                     model=self.model,
                     messages=messages,
                     temperature=self.temperature,
-                    max_tokens=512,
+                    max_tokens=self.max_tokens,
                     top_p=self.top_p,
                     timeout=self.timeout
                 )
@@ -327,12 +337,18 @@ class SiliconFlowClient(BaseLLMClient):
                 answer = response.choices[0].message.content.strip()
                 return ResponseParser.parse_json_response(answer, output_fields, default_values)
 
+            except RateLimitError as e:
+                wait_time = 2 ** current_retry
+                logger.warning(f"遭遇速率限制 (尝试 {current_retry + 1}/{self.max_retries})，等待 {wait_time} 秒后重试。错误: {str(e)}")
+                time.sleep(wait_time)
+                current_retry += 1
             except Exception as e:
-                logger.error(f"使用硅基流动生成摘要时出错 (尝试 {attempt + 1}/{self.max_retries}): {str(e)}")
-                if attempt == self.max_retries - 1:
-                    return default_values
-                time.sleep(2 ** attempt)  # 指数退避
+                wait_time = 2 ** current_retry
+                logger.error(f"使用硅基流动生成摘要时出错 (尝试 {current_retry + 1}/{self.max_retries})，等待 {wait_time} 秒后重试。错误: {str(e)}")
+                time.sleep(wait_time)
+                current_retry += 1
 
+        logger.error(f"已达到最大重试次数 {self.max_retries}，无法生成摘要。")
         return default_values
 
     def batch_generate_summaries(self, abstracts: List[str],
@@ -402,7 +418,8 @@ class OllamaClient(BaseLLMClient):
 
     def __init__(self, api_url: str = "http://localhost:11434/api",
                  model: str = "llama3", max_retries: int = 3, timeout: int = 120,
-                 temperature: float = 0.7, top_p: float = 0.9, api_key: Optional[str] = None):
+                 temperature: float = 0.7, top_p: float = 0.9, api_key: Optional[str] = None,
+                 max_tokens: int = 4096):
         """
         初始化Ollama客户端
 
@@ -414,6 +431,7 @@ class OllamaClient(BaseLLMClient):
             temperature: 温度参数，控制生成文本的随机性
             top_p: Top-p 采样参数
             api_key: 可选的API密钥
+            max_tokens: 控制生成的最大令牌数
         """
         self.api_url = api_url
         self.model = model
@@ -422,6 +440,7 @@ class OllamaClient(BaseLLMClient):
         self.temperature = temperature
         self.top_p = top_p
         self.api_key = api_key if api_key and api_key != "" else None
+        self.max_tokens = max_tokens
 
     def _prepare_headers(self) -> Dict[str, str]:
         """准备请求头"""
@@ -461,7 +480,8 @@ class OllamaClient(BaseLLMClient):
             "messages": ollama_messages,
             "options": {
                 "temperature": self.temperature,
-                "top_p": self.top_p
+                "top_p": self.top_p,
+                "num_predict": self.max_tokens
             },
             "stream": False
         }
@@ -595,10 +615,26 @@ def create_llm_client(model_type: str, **kwargs) -> BaseLLMClient:
     # 提取prompt_template参数，如果存在
     prompt_template = kwargs.pop('prompt_template', None)
 
+    # 从 kwargs 中提取模型参数，如果不存在则使用默认值
+    kwargs.setdefault('temperature', 0.7)
+    kwargs.setdefault('top_p', 0.9)
+    kwargs.setdefault('max_tokens', 4096)
+
     # 创建基础客户端
     if model_type.lower() == "vllm":
         client = VllmClient(**kwargs)
     elif model_type.lower() == "siliconflow":
+        if 'rpm' not in kwargs or 'tpm' not in kwargs:
+            try:
+                from ..config.config_manager import load_config
+                config = load_config()
+                llm_config = config.get("llm", {})
+                kwargs.setdefault('rpm', llm_config.get('siliconflow_rpm', 3000))
+                kwargs.setdefault('tpm', llm_config.get('siliconflow_tpm', 200000))
+            except Exception:
+                kwargs.setdefault('rpm', 3000)
+                kwargs.setdefault('tpm', 200000)
+                logger.warning("无法从配置中加载 RPM/TPM，使用默认值。")
         client = SiliconFlowClient(**kwargs)
     elif model_type.lower() == "ollama":
         client = OllamaClient(**kwargs)

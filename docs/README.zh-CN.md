@@ -62,6 +62,7 @@ easyscholar_api_key: "YOUR_EASYSCHOLAR_API_KEY"
 
 # 期刊指标配置
 journal_metrics:
+  enabled: true # 设置为 false 可禁用期刊指标获取功能
   # 需要获取的指标类型，请参考 https://www.easyscholar.cc/console/user/open 附录1，填写对应缩写
   metrics_to_fetch:
     - "sciif"
@@ -95,6 +96,7 @@ output:
 
 # 大语言模型（LLM）配置
 llm:
+  enabled: true # 设置为 false 可禁用 LLM 摘要理解功能
   type: "vllm"  # 默认使用的模型类型，可选项包括 vllm / siliconflow / ollama 等
   vllm_api_url: "http://127.0.0.1:8000/v1/chat/completions"
   vllm_api_key: ""
@@ -103,6 +105,8 @@ llm:
   siliconflow_api_key: "YOUR_SILICONFLOW_API_KEY"
   siliconflow_base_url: "https://api.siliconflow.cn/v1"
   siliconflow_model: "Pro/deepseek-ai/DeepSeek-V3"
+  siliconflow_rpm: 1000   # SiliconFlow 每分钟请求数限制
+  siliconflow_tpm: 50000 # SiliconFlow 每分钟令牌数限制
 
   ollama_api_url: "http://localhost:11434/api"
   ollama_model: "llama3"
@@ -111,6 +115,7 @@ llm:
   model_parameters:
     temperature: 0.7
     top_p: 0.9
+    max_tokens: 4096 # 控制模型生成的最大令牌数
 
 # 提示词配置
 prompt:
