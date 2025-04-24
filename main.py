@@ -1,3 +1,4 @@
+import os
 import sys
 import argparse
 import pandas as pd
@@ -444,6 +445,10 @@ def main():
     # 获取输出配置
     output_config = config.get("output", {})
     output_excel_path = output_config.get("excel_path", "data/combined-output.xlsx")
+    # 检查输出文件夹是否存在，不存在新建
+    output_dir = os.path.dirname(output_excel_path)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
     
     # 加载YAML提示词模板
     templates_dir = config.get("prompt", {}).get("templates_dir", "config/prompts")
