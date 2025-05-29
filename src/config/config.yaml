@@ -1,0 +1,80 @@
+easyscholar_api_key: ''
+journal_metrics:
+  enabled: true
+  metrics_column_mapping:
+    ahci: A&HCI
+    ajg: ABS学术期刊指南
+    ccf: 中国计算机学会
+    cju: 长江大学（不是计量大学）
+    cpu: 中国药科大学
+    cqu: 重庆大学
+    cscd: 中国科学引文数据库
+    cssci: 南大核心
+    cufe: 中央财经大学
+    cug: 中国地质大学
+    eii: EI检索
+    esi: ESI学科分类
+    fdu: 复旦大学
+    fms: FMS
+    ft50: FT50
+    hhu: 河海大学
+    jci: JCI指数-JCR
+    nju: 南京大学
+    pku: 北大核心
+    ruc: 中国人民大学
+    sci: SCI分区-JCR
+    sciBase: SCI基础版分区-中科院
+    sciUp: SCI升级版分区-中科院
+    sciUpSmall: 中科院升级版小类分区
+    sciUpTop: 中科院升级版Top分区
+    sciif: SCI影响因子-JCR
+    sciif5: SCI五年影响因子-JCR
+    sciwarn: 中科院预警
+    scu: 四川大学
+    sdufe: 山东财经大学
+    sjtu: 上海交通大学
+    ssci: SSCI分区-JCR
+    swjtu: 西南交通大学
+    swufe: 西南财经大学
+    uibe: 对外经济贸易大学
+    utd24: UTD24
+    xdu: 西安电子科技大学
+    xju: 新疆大学
+    xmu: 厦门大学
+    zhongguokejihexin: 中国科技核心期刊
+    zju: 浙江大学
+  metrics_to_fetch:
+  - ccf
+  - sciif
+  - sci
+  - ssci
+  - sciwarn
+  - sciBase
+  - sciUp
+  - sciUpSmall
+  - sciUpTop
+llm:
+  enabled: true
+  model_parameters:
+    max_tokens: 4096
+    temperature: 0.7
+    top_p: 0.9
+  ollama_api_key: ''
+  ollama_api_url: http://localhost:11434/api
+  ollama_model: llama3
+  siliconflow_api_key: ''
+  siliconflow_base_url: https://api.siliconflow.cn/v1
+  siliconflow_model: Qwen/Qwen2.5-7B-Instruct
+  siliconflow_rpm: 900
+  siliconflow_tpm: 45000
+  type: siliconflow
+  vllm_api_key: ''
+  vllm_api_url: http://localhost:8000/v1/completions
+  vllm_model: qwen
+output:
+  separate_sheets: true
+processing:
+  batch_size: 16
+  max_workers: 4
+prompt:
+  default_type: medical

@@ -15,7 +15,9 @@ _last_request_time = 0
 
 def get_journal_metrics(journal_name: str, api_key: Optional[str] = None,
                         metrics_to_fetch: Optional[List[str]] = None,
-                        metrics_column_mapping: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+                        metrics_column_mapping: Optional[Dict[str, str]] = None,
+                        progress_callback: Optional[callable] = None,
+                        current_index: int = 0, total_count: int = 1) -> Dict[str, Any]:
     """
     调用easyscholar API获取期刊指标，实现缓存功能
 
@@ -184,10 +186,19 @@ def get_journal_metrics(journal_name: str, api_key: Optional[str] = None,
 
         # 将结果保存到缓存
         _journal_metrics_cache[journal_name] = result
+        
+        # 调用进度回调
+        if progress_callback:
+            progress_callback(current_index + 1, total_count, 'journal_metrics')
+        
         return result
     except Exception as e:
         logger.warning(f"获取期刊 {journal_name} 指标时出错: {str(e)}")
         _journal_metrics_cache[journal_name] = empty_result
+        
+        if progress_callback:
+            progress_callback(current_index + 1, total_count, 'journal_metrics')
+        
         return empty_result
 
 # 清除缓存的函数，在需要重新获取数据时调用

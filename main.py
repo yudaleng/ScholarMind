@@ -49,9 +49,11 @@ class CombinedProcessor:
         self.max_workers = self.config.get("processing", {}).get("max_workers", 4)
         self.ai_fields = OutputConfig.get_fields(self.prompt_type)
 
-    def process_data(self, input_df: pd.DataFrame) -> pd.DataFrame:
+    def process_data(self, input_df: pd.DataFrame, progress_callback=None) -> pd.DataFrame:
         """处理来自多个数据源的合并数据"""
         df = input_df.copy()
+        self.progress_callback = progress_callback
+        total_records = len(df)
         
         # 检测并处理数据重合的情况，优先使用WOS数据
         if 'source_type' in df.columns:
@@ -312,11 +314,12 @@ class CombinedProcessor:
             for idx, row in df.iterrows():
                 abstracts.append(str(row.get('abstract', '')))
             
-            # 获取AI生成的JSON结果
+            # 获取AI生成的JSON结果，直接传递进度回调
             ai_results = self.llm_client.batch_generate_summaries(
                 abstracts, 
                 batch_size=self.max_workers, # 使用 max_workers 作为并发数
-                prompt_type=self.prompt_type
+                prompt_type=self.prompt_type,
+                progress_callback=self.progress_callback
             )
             
             # 创建新的空列
@@ -384,15 +387,22 @@ class CombinedProcessor:
             
             # 批量获取期刊指标
             metrics_dict = {}
-            for journal in tqdm(journals, desc="获取期刊指标"):
+            journals_list = list(journals)
+            for i, journal in enumerate(journals_list):
                 if not journal:
+                    # 即使期刊名为空也要更新进度
+                    if self.progress_callback:
+                        self.progress_callback(i + 1, len(journals_list), 'journal_metrics')
                     continue
                     
-                # 获取该期刊的所有配置指标
+                # 获取该期刊的所有配置指标，传递进度回调
                 journal_metrics = self.get_journal_metrics_func(
                     journal_name=journal,
                     metrics_to_fetch=self.metrics_to_fetch,
-                    metrics_column_mapping=self.metrics_column_mapping # 传递映射以正确解析结果
+                    metrics_column_mapping=self.metrics_column_mapping, # 传递映射以正确解析结果
+                    progress_callback=self.progress_callback,
+                    current_index=i,
+                    total_count=len(journals_list)
                 )
                 
                 if journal_metrics:

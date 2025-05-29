@@ -96,7 +96,8 @@ class BaseLLMClient(ABC):
 
     @abstractmethod
     def batch_generate_summaries(self, abstracts: List[str],
-                                 batch_size: int = 16, prompt_type: str = "medical") -> List[Dict[str, str]]:
+                                 batch_size: int = 16, prompt_type: str = "medical",
+                                 progress_callback: Optional[callable] = None) -> List[Dict[str, str]]:
         """批量生成摘要的抽象方法"""
         pass
 
@@ -201,7 +202,8 @@ class VllmClient(BaseLLMClient):
         return default_values
 
     def batch_generate_summaries(self, abstracts: List[str],
-                                 batch_size: int = 16, prompt_type: str = "medical") -> List[Dict[str, str]]:
+                                 batch_size: int = 16, prompt_type: str = "medical",
+                                 progress_callback: Optional[callable] = None) -> List[Dict[str, str]]:
         """
         批量生成摘要理解
 
@@ -237,17 +239,23 @@ class VllmClient(BaseLLMClient):
                 future = executor.submit(self.generate_summary, abstract, prompt_type)
                 future_to_index[future] = i
 
-            # 添加tqdm进度条，并收集结果
-            with tqdm(total=len(future_to_index), desc="处理摘要进度", ncols=100) as pbar:
-                for future in concurrent.futures.as_completed(future_to_index):
-                    index = future_to_index[future]
-                    try:
-                        summary = future.result()
-                        results[index] = summary
-                    except Exception as e:
-                        logger.error(f"处理摘要 {index} 时出错: {str(e)}")
-                        results[index] = dict(default_values)
-                    pbar.update(1)
+            # 收集结果并更新进度
+            completed_count = 0
+            total_tasks = len(future_to_index)
+            
+            for future in concurrent.futures.as_completed(future_to_index):
+                index = future_to_index[future]
+                try:
+                    summary = future.result()
+                    results[index] = summary
+                except Exception as e:
+                    logger.error(f"处理摘要 {index} 时出错: {str(e)}")
+                    results[index] = dict(default_values)
+                
+                completed_count += 1
+                # 调用进度回调
+                if progress_callback:
+                    progress_callback(completed_count, len(abstracts), 'ai_analysis')
 
         # 过滤掉None值，这些是我们已经在前面处理过的空摘要
         final_results = []
@@ -352,7 +360,8 @@ class SiliconFlowClient(BaseLLMClient):
         return default_values
 
     def batch_generate_summaries(self, abstracts: List[str],
-                                 batch_size: int = 16, prompt_type: str = "medical") -> List[Dict[str, str]]:
+                                 batch_size: int = 16, prompt_type: str = "medical",
+                                 progress_callback: Optional[callable] = None) -> List[Dict[str, str]]:
         """
         批量生成摘要理解
 
@@ -388,17 +397,23 @@ class SiliconFlowClient(BaseLLMClient):
                 future = executor.submit(self.generate_summary, abstract, prompt_type)
                 future_to_index[future] = i
 
-            # 添加tqdm进度条，并收集结果
-            with tqdm(total=len(future_to_index), desc="处理摘要进度", ncols=100) as pbar:
-                for future in concurrent.futures.as_completed(future_to_index):
-                    index = future_to_index[future]
-                    try:
-                        summary = future.result()
-                        results[index] = summary
-                    except Exception as e:
-                        logger.error(f"处理摘要 {index} 时出错: {str(e)}")
-                        results[index] = dict(default_values)
-                    pbar.update(1)
+            # 收集结果并更新进度
+            completed_count = 0
+            total_tasks = len(future_to_index)
+            
+            for future in concurrent.futures.as_completed(future_to_index):
+                index = future_to_index[future]
+                try:
+                    summary = future.result()
+                    results[index] = summary
+                except Exception as e:
+                    logger.error(f"处理摘要 {index} 时出错: {str(e)}")
+                    results[index] = dict(default_values)
+                
+                completed_count += 1
+                # 调用进度回调
+                if progress_callback:
+                    progress_callback(completed_count, len(abstracts), 'ai_analysis')
 
         # 过滤掉None值，这些是我们已经在前面处理过的空摘要
         final_results = []
@@ -514,7 +529,8 @@ class OllamaClient(BaseLLMClient):
         return default_values
 
     def batch_generate_summaries(self, abstracts: List[str],
-                                 batch_size: int = 5, prompt_type: str = "medical") -> List[Dict[str, str]]:
+                                 batch_size: int = 5, prompt_type: str = "medical",
+                                 progress_callback: Optional[callable] = None) -> List[Dict[str, str]]:
         """
         批量生成摘要理解
 
@@ -550,17 +566,23 @@ class OllamaClient(BaseLLMClient):
                 future = executor.submit(self.generate_summary, abstract, prompt_type)
                 future_to_index[future] = i
 
-            # 添加tqdm进度条，并收集结果
-            with tqdm(total=len(future_to_index), desc="处理摘要进度", ncols=100) as pbar:
-                for future in concurrent.futures.as_completed(future_to_index):
-                    index = future_to_index[future]
-                    try:
-                        summary = future.result()
-                        results[index] = summary
-                    except Exception as e:
-                        logger.error(f"处理摘要 {index} 时出错: {str(e)}")
-                        results[index] = dict(default_values)
-                    pbar.update(1)
+            # 收集结果并更新进度
+            completed_count = 0
+            total_tasks = len(future_to_index)
+            
+            for future in concurrent.futures.as_completed(future_to_index):
+                index = future_to_index[future]
+                try:
+                    summary = future.result()
+                    results[index] = summary
+                except Exception as e:
+                    logger.error(f"处理摘要 {index} 时出错: {str(e)}")
+                    results[index] = dict(default_values)
+                
+                completed_count += 1
+                # 调用进度回调
+                if progress_callback:
+                    progress_callback(completed_count, len(abstracts), 'ai_analysis')
 
         # 过滤掉None值，这些是我们已经在前面处理过的空摘要
         final_results = []
@@ -645,4 +667,4 @@ def create_llm_client(model_type: str, **kwargs) -> BaseLLMClient:
     if prompt_template is not None:
         return CustomPromptClient(client, prompt_template)
 
-    return client 
+    return client

@@ -1,0 +1,51 @@
+type: "medical-computing"
+name: "医学计算研究文献分析"
+description: "分析医学与计算机交叉研究文献，提取研究目的、计算机技术应用、方法、主要发现、关键技术贡献、实验验证结果和临床意义及潜在应用"
+
+system: |
+  你是一位专业的医学与计算机交叉研究文献助手，擅长分析和提取此类文献中的关键信息。
+  请根据提供的摘要，分析研究的目的、所采用的计算机或AI技术、研究方法、主要发现、计算机技术对研究的贡献、实验验证结果、以及其临床意义和潜在应用。
+  必须以严格的JSON格式输出结果，包含所有请求的字段。
+  不要在JSON外添加任何额外文字。输出必须是有效的JSON格式。
+
+user_template: |
+  请分析以下医学与计算机交叉研究文献摘要，并以JSON格式输出结果：
+
+  {abstract}
+
+  请严格按照以下JSON格式提供分析结果，不要添加任何额外说明：
+  ```json
+  {
+    "ai_summary": "对摘要的整体理解和总结，侧重医学与计算机交叉点的概括 (300字以内)",
+    "research_purpose": "研究目的，明确指出医学问题和拟解决的技术挑战",
+    "computer_ai_techniques": "所采用的计算机科学或人工智能技术（如：机器学习算法、深度学习模型、图像处理、数据挖掘、自然语言处理等），并简述其原理或作用",
+    "data_and_tools": "研究中使用的数据集、数据规模、以及关键的软件工具或平台",
+    "research_methods": "研究方法，包括实验设计、数据处理流程、模型训练过程等",
+    "major_findings": "主要医学发现，即研究揭示的医学层面的新知识或洞察",
+    "technical_contributions": "关键技术贡献，即计算机或AI技术在方法学或应用上的创新点",
+    "experimental_validation": "实验设计和验证结果，包括评估指标、性能表现、与其他方法的比较等",
+    "clinical_significance_and_applications": "临床意义和潜在应用，讨论研究成果对医学实践的潜在影响，以及可能的实际应用场景和未来发展方向"
+  }
+  ```
+
+fields:
+  - "ai_summary"
+  - "research_purpose"
+  - "computer_ai_techniques"
+  - "data_and_tools"
+  - "research_methods"
+  - "major_findings"
+  - "technical_contributions"
+  - "experimental_validation"
+  - "clinical_significance_and_applications"
+
+default_values:
+  ai_summary: ""
+  research_purpose: "未明确描述"
+  computer_ai_techniques: "未明确提及"
+  data_and_tools: "未详细说明"
+  research_methods: "未详细说明"
+  major_findings: "未明确提及"
+  technical_contributions: "未明确提及"
+  experimental_validation: "未详细说明"
+  clinical_significance_and_applications: "未明确提及"

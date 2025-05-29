@@ -42,6 +42,39 @@ pip install -r requirements.txt
 
 ---
 
+
+## 🚀 Quick Start
+
+ScholarMind offers two primary ways to get started:
+
+### 🌐 Web Interface
+
+For a user-friendly experience, you can launch the web application. Simply run `launch_app.py`:
+
+```bash
+python launch_app.py
+```
+
+Once launched, you can access the application through your web browser. Here's a preview of the home page:
+
+<div align="center">
+  <img src="docs/images/home.png" alt="Web Interface Home Page" width="800">
+</div>
+
+### ⚙️ Command Line with Configuration File
+
+For batch processing and advanced usage, you can run ScholarMind via the command line using a configuration file:
+
+```bash
+# Use src/config/config.yaml
+python main.py
+# Specify a custom config file
+python main.py --config custom_config.yaml
+```
+
+---
+
+
 ## ⚙️ Configuration
 
 Create `config.yaml` under `src/config` (or copy from `config.yaml.example`):
@@ -117,17 +150,6 @@ processing:
   disable_summary: false  # Whether to disable automatic summarization
   batch_size: 16          # Number of entries to process per batch
   max_workers: 4          # Number of concurrent threads
-```
-
----
-
-## 🚀 Quick Start
-
-```bash
-# Use src/config/config.yaml
-python main.py
-# Specify config file
-python main.py --config custom_config.yaml
 ```
 
 ---

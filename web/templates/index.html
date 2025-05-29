@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScholarMind - 学术文献处理工具</title>
+    <meta name="description" content="强大的学术文献处理工具，支持多数据源整合、智能去重、期刊指标分析和AI摘要理解">
+    <meta name="keywords" content="学术文献,文献处理,期刊指标,AI分析,PubMed,Web of Science">
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- AOS Animation Library -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="#" data-aos="fade-right">
+                <div class="brand-logo">
+                    <i class="bi bi-mortarboard"></i>
+                    <span class="brand-text">ScholarMind</span>
+                </div>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto" data-aos="fade-left">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#home">
+                            <i class="bi bi-house-door me-1"></i>
+                            首页
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#upload">
+                            <i class="bi bi-cloud-upload me-1"></i>
+                            数据上传
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#config">
+                            <i class="bi bi-gear me-1"></i>
+                            配置设置
+                        </a>
+                    </li>
+                    <li class="nav-item">
+
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#process">
+                            <i class="bi bi-cpu me-1"></i>
+                            数据处理
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#results">
+                            <i class="bi bi-download me-1"></i>
+                            处理结果
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容 -->
+    <main>
+        <!-- 英雄区域 -->
+        <section id="home" class="hero-section">
+            <div class="hero-background">
+                <div class="hero-particles"></div>
+            </div>
+            <div class="container">
+                <div class="row align-items-center min-vh-100">
+                    <div class="col-lg-6" data-aos="fade-right" data-aos-duration="1000">
+                        <div class="hero-content">
+                            <h1 class="hero-title">
+                                <span class="hero-icon">
+                                    <i class="bi bi-mortarboard"></i>
+                                </span>
+                                Scholar<span class="text-gradient">Mind</span>
+                            </h1>
+                            <p class="hero-subtitle">强大的学术文献处理工具</p>
+                            <p class="hero-description">
+                                支持多数据源整合、智能去重、期刊指标分析和AI摘要理解，
+                                让学术研究更加高效便捷
+                            </p>
+                            <div class="hero-actions">
+                                <a href="#upload" class="btn btn-primary btn-lg me-3">
+                                    <i class="bi bi-rocket-takeoff me-2"></i>
+                                    开始使用
+                                </a>
+                                <a href="#features" class="btn btn-outline-primary btn-lg">
+                                    <i class="bi bi-info-circle me-2"></i>
+                                    了解更多
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6" data-aos="fade-left" data-aos-duration="1000" data-aos-delay="200">
+                        <div class="hero-visual">
+                            <div class="feature-cards">
+                                <div class="feature-card" data-aos="zoom-in" data-aos-delay="400">
+                                    <div class="feature-icon bg-primary">
+                                        <i class="bi bi-database"></i>
+                                    </div>
+                                    <h6>多数据源支持</h6>
+                                    <p>PubMed, WoS, ScienceDirect</p>
+                                </div>
+                                <div class="feature-card" data-aos="zoom-in" data-aos-delay="600">
+                                    <div class="feature-icon bg-success">
+                                        <i class="bi bi-arrow-repeat"></i>
+                                    </div>
+                                    <h6>智能去重</h6>
+                                    <p>高效的文献去重算法</p>
+                                </div>
+                                <div class="feature-card" data-aos="zoom-in" data-aos-delay="800">
+                                    <div class="feature-icon bg-info">
+                                        <i class="bi bi-graph-up"></i>
+                                    </div>
+                                    <h6>期刊指标</h6>
+                                    <p>影响因子、分区信息</p>
+                                </div>
+                                <div class="feature-card" data-aos="zoom-in" data-aos-delay="1000">
+                                    <div class="feature-icon bg-warning">
+                                        <i class="bi bi-robot"></i>
+                                    </div>
+                                    <h6>AI分析</h6>
+                                    <p>智能摘要理解</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="scroll-indicator">
+                <a href="#features" class="scroll-down">
+                    <i class="bi bi-chevron-down"></i>
+                </a>
+            </div>
+        </section>
+
+        <!-- 功能特性区域 -->
+        <section id="features" class="features-section py-5">
+            <div class="container">
+                <div class="row">
+                    <div class="col-12 text-center mb-5" data-aos="fade-up">
+                        <h2 class="section-title">核心功能</h2>
+                        <p class="section-subtitle">为学术研究提供全方位的文献处理解决方案</p>
+                    </div>
+                </div>
+                <div class="row g-4">
+                    <div class="col-md-6 col-lg-3" data-aos="fade-up" data-aos-delay="100">
+                        <div class="feature-item">
+                            <div class="feature-icon-large bg-primary">
+                                <i class="bi bi-cloud-upload"></i>
+                            </div>
+                            <h5>便捷上传</h5>
+                            <p>支持拖拽上传，多种数据源格式，操作简单直观</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-3" data-aos="fade-up" data-aos-delay="200">
+                        <div class="feature-item">
+                            <div class="feature-icon-large bg-success">
+                                <i class="bi bi-shield-check"></i>
+                            </div>
+                            <h5>数据安全</h5>
+                            <p>本地处理，数据安全可靠，保护您的研究隐私</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-3" data-aos="fade-up" data-aos-delay="300">
+                        <div class="feature-item">
+                            <div class="feature-icon-large bg-info">
+                                <i class="bi bi-lightning"></i>
+                            </div>
+                            <h5>高效处理</h5>
+                            <p>并行处理技术，快速完成大批量文献数据分析</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-3" data-aos="fade-up" data-aos-delay="400">
+                        <div class="feature-item">
+                            <div class="feature-icon-large bg-warning">
+                                <i class="bi bi-file-earmark-excel"></i>
+                            </div>
+                            <h5>结果导出</h5>
+                            <p>Excel格式输出，支持多工作表，便于后续分析</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="container mt-5">
+
+        <!-- 数据上传区域 -->
+        <section id="upload" class="section-padding">
+            <div class="row mb-5">
+                <div class="col-12">
+                    <div class="card modern-card" data-aos="fade-up">
+                        <div class="card-header">
+                            <div class="d-flex align-items-center">
+                                <div class="section-icon bg-primary">
+                                    <i class="bi bi-cloud-upload"></i>
+                                </div>
+                                <div class="ms-3">
+                                    <h4 class="mb-0">数据上传</h4>
+                                    <p class="text-muted mb-0">支持多种学术数据库格式</p>
+                                </div>
+                            </div>
+                        </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h5>支持的数据源</h5>
+                                <div class="data-source-info">
+                                    <div class="source-item mb-3">
+                                        <div class="d-flex align-items-center">
+                                            <i class="bi bi-file-text text-primary me-2"></i>
+                                            <strong>PubMed</strong>
+                                        </div>
+                                        <small class="text-muted">导出为PubMed格式，选择"All results"，保存为.txt文件</small>
+                                    </div>
+                                    <div class="source-item mb-3">
+                                        <div class="d-flex align-items-center">
+                                            <i class="bi bi-file-text text-success me-2"></i>
+                                            <strong>Web of Science</strong>
+                                        </div>
+                                        <small class="text-muted">导出为"Plain Text"，选择"Full Record"</small>
+                                    </div>
+                                    <div class="source-item mb-3">
+                                        <div class="d-flex align-items-center">
+                                            <i class="bi bi-file-text text-info me-2"></i>
+                                            <strong>ScienceDirect</strong>
+                                        </div>
+                                        <small class="text-muted">使用"Export citation to text"功能</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h5>上传文件</h5>
+                                <div class="upload-area">
+                                    <div class="mb-3">
+                                        <label for="sourceType" class="form-label">数据源类型</label>
+                                        <select class="form-select" id="sourceType">
+                                            <option value="pubmed">PubMed</option>
+                                            <option value="wos">Web of Science</option>
+                                            <option value="sciencedirect">ScienceDirect</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <!-- 拖拽上传区域 -->
+                                    <div class="drag-drop-area mb-3">
+                                        <div class="drag-drop-content">
+                                            <i class="bi bi-cloud-upload drag-drop-icon"></i>
+                                            <h6>拖拽文件到此处</h6>
+                                            <p class="text-muted mb-3">或者点击选择文件</p>
+                                            <input type="file" class="form-control d-none" id="fileInput" accept=".txt">
+                                            <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('fileInput').click()">
+                                                <i class="bi bi-folder2-open me-2"></i>
+                                                选择文件
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <button type="button" class="btn btn-primary btn-lg w-100" id="uploadBtn">
+                                        <i class="bi bi-upload me-2"></i>
+                                        上传文件
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 已上传文件列表 -->
+                        <div class="mt-4">
+                            <h5>已上传文件</h5>
+                            <div id="uploadedFiles" class="uploaded-files">
+                                <div class="text-muted text-center py-3">
+                                    <i class="bi bi-inbox"></i>
+                                    暂无上传文件
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 配置设置区域 -->
+        <section id="config" class="section-padding">
+            <div class="row mb-5">
+                <div class="col-12">
+                    <div class="card modern-card" data-aos="fade-up">
+                        <div class="card-header">
+                            <div class="d-flex align-items-center">
+                                <div class="section-icon bg-success">
+                                    <i class="bi bi-gear"></i>
+                                </div>
+                                <div class="ms-3">
+                                    <h4 class="mb-0">配置设置</h4>
+                                    <p class="text-muted mb-0">自定义处理参数和选项</p>
+                                </div>
+                            </div>
+                        </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- 期刊指标配置 -->
+                            <div class="col-md-6 mb-4">
+                                <div class="config-section">
+                                    <h5><i class="bi bi-graph-up text-info"></i> 期刊指标</h5>
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="journalMetricsEnabled" checked>
+                                        <label class="form-check-label" for="journalMetricsEnabled">
+                                            启用期刊指标获取
+                                        </label>
+                                    </div>
+                                    <div id="journalMetricsConfig">
+                                        <div class="mb-3">
+                                            <label for="easyscholarApiKey" class="form-label">EasyScholar API Key</label>
+                                            <input type="password" class="form-control" id="easyscholarApiKey" placeholder="请输入API Key">
+                                            <div class="form-text">
+                                                <a href="https://www.easyscholar.cc/console/user/open" target="_blank">
+                                                    获取API Key
+                                                </a>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">指标类型</label>
+                                            <div class="row">
+                                                <!-- 大学指标 -->
+                                <div class="col-md-4">
+                                    <h6 class="text-muted mb-2">大学指标</h6>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="metric_swufe" name="journalMetrics" value="swufe">
+                                        <label class="form-check-label" for="metric_swufe">西南财经大学</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="metric_cufe" name="journalMetrics" value="cufe">
+                                        <label class="form-check-label" for="metric_cufe">中央财经大学</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="metric_uibe" name="journalMetrics" value="uibe">
+                                        <label class="form-check-label" for="metric_uibe">对外经济贸易大学</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="metric_sdufe" name="journalMetrics" value="sdufe">
+                                        <label class="form-check-label" for="metric_sdufe">山东财经大学</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="metric_xdu" name="journalMetrics" value="xdu">
+                                        <label class="form-check-label" for="metric_xdu">西安电子科技大学</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="metric_swjtu" name="journalMetrics" value="swjtu">
+                                        <label class="form-check-label" for="metric_swjtu">西南交通大学</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="metric_ruc" name="journalMetrics" value="ruc">
+                                        <label class="form-check-label" for="metric_ruc">中国人民大学</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="metric_xmu" name="journalMetrics" value="xmu">
+                                        <label class="form-check-label" for="metric_xmu">厦门大学</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="metric_sjtu" name="journalMetrics" value="sjtu">
+                                        <label class="form-check-label" for="metric_sjtu">上海交通大学</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="metric_fdu" name="journalMetrics" value="fdu">
+                                        <label class="form-check-label" for="metric_fdu">复旦大学</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="metric_hhu" name="journalMetrics" value="hhu">
+                                        <label class="form-check-label" for="metric_hhu">河海大学</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="metric_pku" name="journalMetrics" value="pku">
+                                        <label class="form-check-label" for="metric_pku">北大核心</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="metric_scu" name="journalMetrics" value="scu">
+                                        <label class="form-check-label" for="metric_scu">四川大学</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="metric_cqu" name="journalMetrics" value="cqu">
+                                        <label class="form-check-label" for="metric_cqu">重庆大学</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="metric_nju" name="journalMetrics" value="nju">
+                                        <label class="form-check-label" for="metric_nju">南京大学</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="metric_xju" name="journalMetrics" value="xju">
+                                        <label class="form-check-label" for="metric_xju">新疆大学</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="metric_cug" name="journalMetrics" value="cug">
+                                        <label class="form-check-label" for="metric_cug">中国地质大学</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="metric_cju" name="journalMetrics" value="cju">
+                                        <label class="form-check-label" for="metric_cju">长江大学</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="metric_zju" name="journalMetrics" value="zju">
+                                        <label class="form-check-label" for="metric_zju">浙江大学</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="metric_cpu" name="journalMetrics" value="cpu">
+                                        <label class="form-check-label" for="metric_cpu">中国药科大学</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="metric_qs" name="journalMetrics" value="qs">
+                                        <label class="form-check-label" for="metric_qs">QS世界大学排名</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="metric_the" name="journalMetrics" value="the">
+                                        <label class="form-check-label" for="metric_the">THE世界大学排名</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="metric_arwu" name="journalMetrics" value="arwu">
+                                        <label class="form-check-label" for="metric_arwu">ARWU世界大学学术排名</label>
+                                    </div>
+                                </div>
+                                                
+                                                <!-- 学术组织指标 -->
+                                                <div class="col-md-4">
+                                                    <h6 class="text-muted mb-2">学术组织指标</h6>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="metric_ccf" name="journalMetrics" value="ccf">
+                                                        <label class="form-check-label" for="metric_ccf">中国计算机学会</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="metric_zhongguokejihexin" name="journalMetrics" value="zhongguokejihexin">
+                                                        <label class="form-check-label" for="metric_zhongguokejihexin">中国科技核心期刊</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="metric_fms" name="journalMetrics" value="fms">
+                                                        <label class="form-check-label" for="metric_fms">FMS</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="metric_utd24" name="journalMetrics" value="utd24">
+                                                        <label class="form-check-label" for="metric_utd24">UTD24</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="metric_eii" name="journalMetrics" value="eii">
+                                                        <label class="form-check-label" for="metric_eii">EI检索</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="metric_cssci" name="journalMetrics" value="cssci">
+                                                        <label class="form-check-label" for="metric_cssci">南大核心</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="metric_ajg" name="journalMetrics" value="ajg">
+                                                        <label class="form-check-label" for="metric_ajg">ABS学术期刊指南</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="metric_ft50" name="journalMetrics" value="ft50">
+                                                        <label class="form-check-label" for="metric_ft50">FT50</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="metric_cscd" name="journalMetrics" value="cscd">
+                                                        <label class="form-check-label" for="metric_cscd">中国科学引文数据库</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="metric_ahci" name="journalMetrics" value="ahci">
+                                                        <label class="form-check-label" for="metric_ahci">A&HCI</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="metric_esi" name="journalMetrics" value="esi">
+                                                        <label class="form-check-label" for="metric_esi">ESI学科分类</label>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- SCI/JCR指标 -->
+                                                <div class="col-md-4">
+                                                    <h6 class="text-muted mb-2">SCI/JCR指标</h6>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="metric_sciif" name="journalMetrics" value="sciif" checked>
+                                                        <label class="form-check-label" for="metric_sciif">SCI影响因子-JCR</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="metric_sci" name="journalMetrics" value="sci" checked>
+                                                        <label class="form-check-label" for="metric_sci">SCI分区-JCR</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="metric_ssci" name="journalMetrics" value="ssci">
+                                                        <label class="form-check-label" for="metric_ssci">SSCI分区-JCR</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="metric_jci" name="journalMetrics" value="jci">
+                                                        <label class="form-check-label" for="metric_jci">JCI指数-JCR</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="metric_sciif5" name="journalMetrics" value="sciif5">
+                                                        <label class="form-check-label" for="metric_sciif5">SCI五年影响因子-JCR</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="metric_sciwarn" name="journalMetrics" value="sciwarn">
+                                                        <label class="form-check-label" for="metric_sciwarn">中科院预警</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="metric_sciBase" name="journalMetrics" value="sciBase">
+                                                        <label class="form-check-label" for="metric_sciBase">SCI基础版分区-中科院</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="metric_sciUp" name="journalMetrics" value="sciUp" checked>
+                                                        <label class="form-check-label" for="metric_sciUp">SCI升级版分区-中科院</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="metric_sciUpSmall" name="journalMetrics" value="sciUpSmall">
+                                                        <label class="form-check-label" for="metric_sciUpSmall">中科院升级版小类分区</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="metric_sciUpTop" name="journalMetrics" value="sciUpTop">
+                                                        <label class="form-check-label" for="metric_sciUpTop">中科院升级版Top分区</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- 批量操作按钮 -->
+                                            <div class="mt-3">
+                                                <button type="button" class="btn btn-sm btn-outline-primary me-2" onclick="selectAllMetrics()">全选</button>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary me-2" onclick="clearAllMetrics()">清空</button>
+                                                <button type="button" class="btn btn-sm btn-outline-info" onclick="selectCommonMetrics()">常用指标</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- LLM配置 -->
+                            <div class="col-md-6 mb-4">
+                                <div class="config-section">
+                                    <h5><i class="bi bi-robot text-warning"></i> AI摘要分析</h5>
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="llmEnabled" checked>
+                                        <label class="form-check-label" for="llmEnabled">
+                                            启用AI摘要分析
+                                        </label>
+                                    </div>
+                                    <div id="llmConfig">
+                                        <div class="mb-3">
+                                            <label for="llmType" class="form-label">LLM类型</label>
+                                            <select class="form-select" id="llmType">
+                                                <option value="siliconflow">硅基流动</option>
+                                                <option value="vllm">VLLM (本地)</option>
+                                                <option value="ollama">Ollama</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <!-- API密钥配置 -->
+                                        <div class="mb-3">
+                                            <label for="llmApiKey" class="form-label">API密钥</label>
+                                            <div class="input-group">
+                                                <input type="password" class="form-control" id="llmApiKey" placeholder="请输入API密钥">
+                                                <button class="btn btn-outline-primary" type="button" id="validateApiKeyBtn" style="display: none;">
+                                                    <i class="bi bi-check-circle"></i> 验证
+                                                </button>
+                                            </div>
+                                            <div class="form-text" id="apiKeyHelp">请输入对应LLM服务的API密钥<br>
+                                                <span id="apiKeyLink" style="display: none;">获取密钥：<a href="https://cloud.siliconflow.cn/account/ak" target="_blank">https://cloud.siliconflow.cn/account/ak</a></span>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Base URL配置 (VLLM和Ollama) -->
+                                        <div class="mb-3" id="baseUrlConfig" style="display: none;">
+                                            <label for="llmBaseUrl" class="form-label">Base URL</label>
+                                            <input type="text" class="form-control" id="llmBaseUrl" placeholder="请输入API服务地址">
+                                            <div class="form-text" id="baseUrlHelp">请输入LLM服务的API地址</div>
+                                        </div>
+                                        
+                                        <!-- 硅基流动模型选择 -->
+                                        <div class="mb-3" id="siliconflowModelConfig" style="display: none;">
+                                            <label for="siliconflowModel" class="form-label">硅基流动模型</label>
+                                            <select class="form-select" id="siliconflowModel">
+                                                <option value="Qwen/Qwen2.5-7B-Instruct">Qwen/Qwen2.5-7B-Instruct</option>
+                                                <option value="Qwen/Qwen3-8B">Qwen/Qwen3-8B</option>
+                                                <option value="THUDM/GLM-Z1-9B-0414">THUDM/GLM-Z1-9B-0414</option>
+                                                <option value="deepseek-ai/DeepSeek-R1-Distill-Qwen-7B">deepseek-ai/DeepSeek-R1-Distill-Qwen-7B</option>
+                                                <option value="custom">自定义模型</option>
+                                            </select>
+                                            <input type="text" class="form-control mt-2" id="customSiliconflowModel" placeholder="请输入自定义模型名称" style="display: none;">
+                                            
+                                            <!-- 硅基流动限流配置 -->
+                                            <div class="row mt-3">
+                                                <div class="col-md-6">
+                                                    <label for="siliconflowRpm" class="form-label">每分钟请求数限制 (RPM)</label>
+                                                    <input type="number" class="form-control" id="siliconflowRpm" value="1000" min="1" max="10000">
+                                                    <div class="form-text">设置每分钟最大请求数，避免超出API限制</div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label for="siliconflowTpm" class="form-label">每分钟令牌数限制 (TPM)</label>
+                                                    <input type="number" class="form-control" id="siliconflowTpm" value="50000" min="1000" max="1000000">
+                                                    <div class="form-text">设置每分钟最大令牌数，控制API使用量</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- 模型参数配置 -->
+                                        <div class="mb-3">
+                                            <label class="form-label">模型参数</label>
+                                            <div class="row">
+                                                <div class="col-md-4">
+                                                    <label for="maxTokens" class="form-label">最大令牌数</label>
+                                                    <input type="number" class="form-control" id="maxTokens" value="4096" min="1" max="32768">
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label for="temperature" class="form-label">温度</label>
+                                                    <input type="number" class="form-control" id="temperature" value="0.7" min="0" max="2" step="0.1">
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label for="topP" class="form-label">Top P</label>
+                                                    <input type="number" class="form-control" id="topP" value="0.9" min="0" max="1" step="0.1">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="promptType" class="form-label">提示词模板</label>
+                                            <div class="input-group">
+                                                <select class="form-select" id="promptType">
+                                                    <option value="medical">医学模板</option>
+                                                </select>
+                                                <button class="btn btn-outline-primary" type="button" id="editTemplateBtn" title="编辑提示词模板">
+                                                    <i class="bi bi-pencil-square"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="batchSize" class="form-label">批处理大小</label>
+                                            <input type="number" class="form-control" id="batchSize" value="16" min="1" max="100">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 输出配置 -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="config-section">
+                                    <h5><i class="bi bi-file-earmark-excel text-success"></i> 输出设置</h5>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-check form-switch mb-3">
+                                                <input class="form-check-input" type="checkbox" id="separateSheets" checked>
+                                                <label class="form-check-label" for="separateSheets">
+                                                    分别保存到不同工作表
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="maxWorkers" class="form-label">最大并发数</label>
+                                                <input type="number" class="form-control" id="maxWorkers" value="4" min="1" max="16">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 数据管理 -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="config-section">
+                                    <h5><i class="bi bi-trash text-danger"></i> 数据管理</h5>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="d-grid">
+                                                <button type="button" class="btn btn-outline-danger" id="clearDataBtn">
+                                                    <i class="bi bi-folder-x me-2"></i>
+                                                    清空所有数据文件
+                                                </button>
+                                                <div class="form-text mt-2">清空data目录下的所有上传文件和输出文件</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="d-grid">
+                                                <button type="button" class="btn btn-outline-warning" id="clearApiKeysBtn">
+                                                    <i class="bi bi-key me-2"></i>
+                                                    清空所有API密钥
+                                                </button>
+                                                <div class="form-text mt-2">清空所有已保存的API密钥信息</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 数据处理区域 -->
+        <section id="process" class="section-padding">
+            <div class="row mb-5">
+                <div class="col-12">
+                    <div class="card modern-card" data-aos="fade-up">
+                        <div class="card-header">
+                            <div class="d-flex align-items-center">
+                                <div class="section-icon bg-warning">
+                                    <i class="bi bi-cpu"></i>
+                                </div>
+                                <div class="ms-3">
+                                    <h4 class="mb-0">数据处理</h4>
+                                    <p class="text-muted mb-0">开始处理您的学术文献数据</p>
+                                </div>
+                            </div>
+                        </div>
+                    <div class="card-body">
+                        <div class="text-center">
+                            <button type="button" class="btn btn-warning btn-lg" id="processBtn">
+                                <i class="bi bi-play-circle"></i>
+                                开始处理数据
+                            </button>
+                        </div>
+                        
+                        <!-- 处理状态 -->
+                        <div id="processStatus" class="mt-4" style="display: none;">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5>处理状态</h5>
+                                    <div class="progress mb-3">
+                                        <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                                             role="progressbar" style="width: 0%"></div>
+                                    </div>
+                                    <div id="statusMessage" class="text-muted">准备中...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 提示词模板编辑模态框 -->
+        <div class="modal fade" id="templateModal" tabindex="-1" aria-labelledby="templateModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="templateModalLabel">
+                            <i class="bi bi-file-text me-2"></i>
+                            提示词模板管理
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <!-- 模板列表 -->
+                            <div class="col-md-4">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h6 class="mb-0">模板列表</h6>
+                                    <button type="button" class="btn btn-primary btn-sm" id="createTemplateBtn">
+                                        <i class="bi bi-plus-circle me-1"></i>
+                                        新建
+                                    </button>
+                                </div>
+                                <div class="list-group" id="templateList" style="max-height: 500px; overflow-y: auto;">
+                                    <!-- 模板列表将通过JavaScript动态加载 -->
+                                </div>
+                            </div>
+                            
+                            <!-- 模板编辑器 -->
+                            <div class="col-md-8">
+                                <div id="templateEditor" style="display: none;">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <h6 id="editorTitle" class="mb-0">编辑模板</h6>
+                                        <div>
+                                            <button type="button" class="btn btn-success btn-sm me-2" id="saveTemplateBtn">
+                                                <i class="bi bi-check-circle me-1"></i>
+                                                保存
+                                            </button>
+                                            <button type="button" class="btn btn-danger btn-sm" id="deleteTemplateBtn">
+                                                <i class="bi bi-trash me-1"></i>
+                                                删除
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div style="max-height: 500px; overflow-y: auto;">
+                                        <form id="templateForm">
+                                            <!-- 基本信息 -->
+                                            <div class="row mb-3">
+                                                <div class="col-md-6">
+                                                    <label for="templateType" class="form-label">模板类型 *</label>
+                                                    <input type="text" class="form-control form-control-sm" id="templateType" required>
+                                                    <div class="form-text">模板的唯一标识符，只能包含字母、数字和下划线</div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label for="templateName" class="form-label">模板名称 *</label>
+                                                    <input type="text" class="form-control form-control-sm" id="templateName" required>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label for="templateDescription" class="form-label">模板描述</label>
+                                                <input type="text" class="form-control form-control-sm" id="templateDescription">
+                                            </div>
+                                            
+                                            <!-- 提示词内容 -->
+                                            <div class="mb-3">
+                                                <label for="systemPrompt" class="form-label">系统提示词 *</label>
+                                                <textarea class="form-control" id="systemPrompt" rows="3" required placeholder="定义AI助手的角色和专业领域..."></textarea>
+                                                <div class="form-text">定义AI助手的角色、专业领域和基本行为规范</div>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label for="userTemplate" class="form-label">用户提示词模板 *</label>
+                                                <textarea class="form-control" id="userTemplate" rows="6" required placeholder="请分析以下文献摘要：\n\n{abstract}\n\n请按照以下格式输出..."></textarea>
+                                                <div class="form-text">用户提示词模板，必须包含 {abstract} 占位符</div>
+                                            </div>
+                                            
+                                            <!-- 输出字段配置 -->
+                                            <div class="mb-3">
+                                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                                    <label class="form-label mb-0">输出字段配置</label>
+                                                    <button type="button" class="btn btn-outline-primary btn-sm" id="addFieldBtn">
+                                                        <i class="bi bi-plus me-1"></i>
+                                                        添加字段
+                                                    </button>
+                                                </div>
+                                                <div id="fieldsContainer">
+                                                    <!-- 字段配置将通过JavaScript动态生成 -->
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                                
+                                <!-- 空状态 -->
+                                <div id="emptyState" class="text-center py-5">
+                                    <i class="bi bi-file-text text-muted" style="font-size: 3rem;"></i>
+                                    <h5 class="text-muted mt-3">选择一个模板开始编辑</h5>
+                                    <p class="text-muted">或者创建一个新的提示词模板</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 处理结果区域 -->
+        <section id="results" class="section-padding">
+            <div class="row mb-5">
+                <div class="col-12">
+                    <div class="card modern-card" data-aos="fade-up">
+                        <div class="card-header">
+                            <div class="d-flex align-items-center">
+                                <div class="section-icon bg-info">
+                                    <i class="bi bi-download"></i>
+                                </div>
+                                <div class="ms-3">
+                                    <h4 class="mb-0">处理结果</h4>
+                                    <p class="text-muted mb-0">下载处理完成的文献数据</p>
+                                </div>
+                            </div>
+                        </div>
+                    <div class="card-body">
+                        <div id="resultContent">
+                            <div class="text-muted text-center py-4">
+                                <i class="bi bi-hourglass-split"></i>
+                                暂无处理结果
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-dark text-white text-center py-3 mt-5">
+        <div class="container">
+            <p class="mb-0">
+                &copy; 2025 ScholarMind - 学术文献处理工具
+                <span class="ms-3">
+                    <a href="https://github.com/yudaleng/ScholarMind" class="text-white" target="_blank">
+                        <i class="bi bi-github"></i> GitHub
+                    </a>
+                </span>
+            </p>
+        </div>
+    </footer>
+
+    <!-- Toast 通知 -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="toast" class="toast" role="alert">
+            <div class="toast-header">
+                <i class="bi bi-info-circle text-primary me-2"></i>
+                <strong class="me-auto">ScholarMind</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body" id="toastBody">
+                消息内容
+            </div>
+        </div>
+    </div>
+
+    <!-- 加载遮罩 -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-content">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">加载中...</span>
+            </div>
+            <div class="mt-3">处理中，请稍候...</div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        // 初始化AOS动画
+        AOS.init({
+            duration: 800,
+            easing: 'ease-in-out',
+            once: true,
+            offset: 100
+        });
+    </script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

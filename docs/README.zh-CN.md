@@ -43,11 +43,30 @@ pip install -r requirements.txt
 ---
 ## 🚀 快速开始
 
-```bash
-# 使用src/config/config.yaml 运行
-python main.py
+ScholarMind 提供两种主要的启动方式：
 
-# 指定 config 文件
+### 🌐 Web 界面
+
+为了更友好的用户体验，您可以启动 Web 应用程序。只需运行 `launch_app.py`：
+
+```bash
+python launch_app.py
+```
+
+启动后，您可以通过 Web 浏览器访问应用程序。以下是主页的预览：
+
+<div align="center">
+  <img src="images/home.png" alt="Web Interface Home Page" width="800">
+</div>
+
+### ⚙️ 命令行与配置文件
+
+对于批量处理和高级用法，您可以通过命令行并使用配置文件来运行 ScholarMind：
+
+```bash
+# 使用 src/config/config.yaml 运行
+python main.py
+# 指定自定义配置文件
 python main.py --config custom_config.yaml
 ```
 

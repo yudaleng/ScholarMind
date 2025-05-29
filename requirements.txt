@@ -1,10 +1,17 @@
-pandas>=1.3.0
-numpy>=1.20.0
-requests>=2.25.0
-tqdm>=4.60.0
-openpyxl>=3.0.7
-pyyaml>=6.0.0
-openai>=1.0.0
-anthropic>=0.3.0
-python-dotenv>=0.19.0
-tenacity>=8.0.0 
+# Core dependencies
+pandas~=2.2.3
+numpy~=2.2.4
+requests~=2.32.3
+tqdm~=4.67.1
+openpyxl~=3.1.5
+PyYAML~=6.0.2
+
+# LLM related dependencies
+openai~=1.69.0
+anthropic~=0.49.0
+python-dotenv~=1.1.0
+tenacity~=9.0.0
+
+# Web application dependencies
+Flask>=3.1.1,<4.0.0
+flask-cors>=6.0.0,<7.0.0

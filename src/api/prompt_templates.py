@@ -1,5 +1,5 @@
-import yaml
 import os
+import yaml
 from typing import List, Dict, Tuple
 import logging
 
