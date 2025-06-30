@@ -121,8 +121,8 @@ class PubmedParser(BaseParser):
             'AB': 'abstract',
             'DP': 'publication_date',
             'AU': 'authors',
-            'JT': 'journal',
-            'TA': 'journal_abbreviation',
+            'JT': 'journal_full',
+            'TA': 'journal',
             'MH': 'mesh_terms',
             'FAU': 'full_authors',
             'AD': 'affiliation',
@@ -140,11 +140,15 @@ class PubmedParser(BaseParser):
             'CI': 'copyright_info',
             'SO': 'source'
         }
-        
+
         # 重命名存在的列
-        for old_col, new_col in column_mapping.items():
-            if old_col in df.columns:
-                df.rename(columns={old_col: new_col}, inplace=True)
+        df.rename(columns={k: v for k, v in column_mapping.items() if k in df.columns}, inplace=True)
+
+        if 'journal_full' in df.columns:
+            if 'journal' in df.columns:
+                df['journal'].fillna(df['journal_full'], inplace=True)
+            else:
+                df['journal'] = df['journal_full']
         
         # 确保标准列存在，不存在则创建空列
         standard_columns = ['pmid', 'title', 'abstract', 'publication_date', 'authors', 'journal', 'doi', 'keywords', 'mesh_terms']
